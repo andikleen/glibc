@@ -17,4 +17,6 @@ extern void hle_aconf_setup(const char *s) attribute_hidden;
 typedef void (*tsx_abort_hook_t) (unsigned);
 extern tsx_abort_hook_t __tsx_abort_hook;
 
+extern int __rwlock_rtm_enabled;
+
 #endif

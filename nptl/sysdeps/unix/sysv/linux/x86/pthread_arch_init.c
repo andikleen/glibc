@@ -27,6 +27,9 @@
 
 #include "adaptive-conf.h"
 
+int __rwlock_rtm_enabled attribute_hidden;
+int __rwlock_rtm_read_retries attribute_hidden = 3;
+
 /* Work around for __environ not initialized early enough (FIXME) */
 static char *brute_force_getenv (const char *name, char *buf, int bufsize)
 {
@@ -86,7 +89,7 @@ pthread_arch_init (void)
     __pthread_force_hle = 2;
   s = brute_force_getenv ("PTHREAD_MUTEX", buf, sizeof buf);
   if (!s)
-    return;
+    goto check_rwlock;
   if (!strncmp (s, "adaptive", 8) && (s[8] == 0 || s[8] == ':'))
     {
       __pthread_force_hle = 2;
@@ -97,4 +100,31 @@ pthread_arch_init (void)
     __pthread_force_hle = 0;
   else 
     __write (2, PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));
+
+check_rwlock:
+  s = brute_force_getenv ("PTHREAD_RWLOCK", buf, sizeof buf);
+  if (!s)
+    {
+      __rwlock_rtm_enabled = cpu_has_rtm ();
+      return;
+    }
+  if (!strncmp (s, "rtm", 3))
+    {
+      __rwlock_rtm_enabled = 1;
+      if (s[3] == ':')
+        {
+          char *end;
+	  int n;
+
+          n = strtoul (s + 4, &end, 0);
+	  if (end == s + 4)
+    	    __write (2, PAIR("pthreads: Bad retry number for PTHREAD_RWLOCK\n"));
+          else
+	    __rwlock_rtm_read_retries = n;
+	}
+    }
+  else if (!strcmp(s, "none"))
+    __rwlock_rtm_enabled = 0;
+  else
+    __write (2, PAIR("pthreads: Unknown setting for PTHREAD_RWLOCK\n"));
 }

@@ -20,6 +20,7 @@
 #include <lowlevellock.h>
 #include <lowlevelrwlock.h>
 #include <kernel-features.h>
+#include <hle.h>
 
 
 	.text
@@ -38,6 +39,24 @@ __pthread_rwlock_unlock:
 
 	movl	12(%esp), %edi
 
+	/* Is lock free? */
+	cmpl $0,WRITER(%edi)
+	jnz  1f
+	cmpl $0,NR_READERS(%edi)
+	jnz  1f
+
+	/* Looks free. Assume transaction.
+	   If you crash here you unlocked a free lock. */
+	XEND
+	xor  %eax,%eax
+
+	pop	%edi
+	cfi_adjust_cfa_offset(-4)
+	pop	%ebx
+	cfi_adjust_cfa_offset(-4)		
+	ret
+	
+1:		
 	/* Get the lock.  */
 	movl	$1, %edx
 	xorl	%eax, %eax
