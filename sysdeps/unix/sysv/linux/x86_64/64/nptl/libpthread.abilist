@@ -3,6 +3,7 @@ GLIBC_2.11
  pthread_sigqueue F
 GLIBC_2.12
  GLIBC_2.12 A
+ __set_abort_hook F
  pthread_getname_np F
  pthread_mutex_consistent F
  pthread_mutexattr_getrobust F

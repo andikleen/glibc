@@ -60,7 +60,7 @@
 /* Internal mutex type value.  */
 enum
 {
-  PTHREAD_MUTEX_KIND_MASK_NP = 3,
+  PTHREAD_MUTEX_KIND_MASK_NP = 7,
   PTHREAD_MUTEX_ROBUST_NORMAL_NP = 16,
   PTHREAD_MUTEX_ROBUST_RECURSIVE_NP
   = PTHREAD_MUTEX_ROBUST_NORMAL_NP | PTHREAD_MUTEX_RECURSIVE_NP,
@@ -570,6 +570,8 @@ extern void __nptl_set_robust (struct pthread *self);
 extern void __free_stacks (size_t limit) attribute_hidden;
 
 extern void __wait_lookup_done (void) attribute_hidden;
+
+extern int __pthread_force_hle attribute_hidden;
 
 #ifdef SHARED
 # define PTHREAD_STATIC_FN_REQUIRE(name)

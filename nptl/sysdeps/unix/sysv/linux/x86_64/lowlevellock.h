@@ -426,6 +426,13 @@ LLL_STUB_UNWIND_INFO_END
 		       : "memory", "cx", "cc", "r10", "r11");		      \
      result; })
 
+extern int __lll_timedlock_adaptive_hle (int *futex, int *try_lock, 
+					 const struct timespec *timeout, 
+					 int private) attribute_hidden;
+
+#define lll_timedlock_adaptive_hle(futex, try_lock, timeout, private)	\
+  __lll_timedlock_adaptive_hle(&(futex), &(try_lock), timeout, private)
+
 #define lll_robust_timedlock(futex, timeout, id, private) \
   ({ int result, ignore1, ignore2, ignore3;				      \
      __asm __volatile (LOCK_INSTR "cmpxchgl %1, %4\n\t"			      \
@@ -595,6 +602,22 @@ extern int __lll_timedwait_tid (int *tid, const struct timespec *abstime)
 	  __result = __lll_timedwait_tid (&tid, abstime);		      \
       }									      \
     __result; })
+
+extern int __lll_adaptive_lock_hle (int *futex, int *try_lock, int private)
+  attribute_hidden;
+
+extern int __lll_adaptive_unlock_hle(int *lock, int private) 
+  attribute_hidden;
+
+extern int __lll_adaptive_trylock_hle(int *lock, int *try_lock)
+  attribute_hidden;
+
+#define lll_adaptive_lock_hle(futex, try_lock, private) \
+  __lll_adaptive_lock_hle (&(futex), &(try_lock), private)
+#define lll_adaptive_unlock_hle(futex, private) \
+  __lll_adaptive_unlock_hle (&(futex), private)
+#define lll_adaptive_trylock_hle(futex, try_lock) \
+  __lll_adaptive_trylock_hle(&(futex), &(try_lock))
 
 #endif  /* !__ASSEMBLER__ */
 

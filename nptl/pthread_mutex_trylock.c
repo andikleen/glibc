@@ -22,6 +22,9 @@
 #include "pthreadP.h"
 #include <lowlevellock.h>
 
+#ifndef lll_adaptive_trylock_hle
+#define lll_adaptive_trylock_hle(a,t) lll_trylock(a)
+#endif
 
 int
 __pthread_mutex_trylock (mutex)
@@ -57,12 +60,28 @@ __pthread_mutex_trylock (mutex)
 	}
       break;
 
-    case PTHREAD_MUTEX_ERRORCHECK_NP:
+    case PTHREAD_MUTEX_HLE_ADAPTIVE_NP:
+    hle_adaptive:
+      if (lll_adaptive_trylock_hle (mutex->__data.__lock, 
+                                    mutex->__data.__spins) != 0)
+        break;
+      /* Don't record the ownership. */
+      return 0;
+
     case PTHREAD_MUTEX_TIMED_NP:
+        if (__pthread_force_hle) 
+          {
+	    mutex->__data.__kind = (mutex->__data.__kind & ~127) | 
+             	   PTHREAD_MUTEX_HLE_ADAPTIVE_NP;
+            goto hle_adaptive;
+          }
+        /*FALL THROUGH*/
+    case PTHREAD_MUTEX_TIMED_NONHLE_NP:
+    case PTHREAD_MUTEX_ERRORCHECK_NP:
     case PTHREAD_MUTEX_ADAPTIVE_NP:
       /* Normal mutex.  */
-      if (lll_trylock (mutex->__data.__lock) != 0)
-	break;
+        if (lll_trylock (mutex->__data.__lock) != 0)
+	  break;
 
       /* Record the ownership.  */
       mutex->__data.__owner = id;

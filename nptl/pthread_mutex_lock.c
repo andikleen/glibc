@@ -25,6 +25,10 @@
 #include <lowlevellock.h>
 #include <stap-probe.h>
 
+#ifndef lll_adaptive_lock_hle
+#define lll_adaptive_lock_hle(lock, try_lock, private)	({ \
+      lll_lock (lock, private); 0; })
+#endif
 
 #ifndef LLL_MUTEX_LOCK
 # define LLL_MUTEX_LOCK(mutex) \
@@ -33,7 +37,10 @@
   lll_trylock ((mutex)->__data.__lock)
 # define LLL_ROBUST_MUTEX_LOCK(mutex, id) \
   lll_robust_lock ((mutex)->__data.__lock, id, \
-		   PTHREAD_ROBUST_MUTEX_PSHARED (mutex))
+		   PTHREAD_ROBUST_MUTEX_PSHARED (mutex))  
+# define LLL_MUTEX_LOCK_ADAPTIVE_HLE(mutex) \
+  lll_adaptive_lock_hle ((mutex)->__data.__lock, (mutex)->__data.__spins, \
+			 PTHREAD_MUTEX_PSHARED (mutex))
 #endif
 
 
@@ -59,11 +66,26 @@ __pthread_mutex_lock (mutex)
   if (__builtin_expect (type, PTHREAD_MUTEX_TIMED_NP)
       == PTHREAD_MUTEX_TIMED_NP)
     {
+      /* Could use IFUNC instead, but that runs into various
+         ordering problems right now. */
+      if (__pthread_force_hle) 
+	{
+	  mutex->__data.__kind = (mutex->__data.__kind & ~127) | 
+		PTHREAD_MUTEX_HLE_ADAPTIVE_NP;
+	  goto adaptive_hle;
+	}
     simple:
       /* Normal mutex.  */
       LLL_MUTEX_LOCK (mutex);
       assert (mutex->__data.__owner == 0);
     }
+  else if (__builtin_expect (type == PTHREAD_MUTEX_HLE_ADAPTIVE_NP, 1))
+    {
+    adaptive_hle:
+      /* Don't record owner or users for HLE case. */
+      return LLL_MUTEX_LOCK_ADAPTIVE_HLE (mutex);
+    }
+
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
       /* Recursive mutex.  */
@@ -86,7 +108,7 @@ __pthread_mutex_lock (mutex)
 
       assert (mutex->__data.__owner == 0);
       mutex->__data.__count = 1;
-    }
+    } 
   else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1))
     {
       if (! __is_smp)
@@ -114,6 +136,11 @@ __pthread_mutex_lock (mutex)
 	  mutex->__data.__spins += (cnt - mutex->__data.__spins) / 8;
 	}
       assert (mutex->__data.__owner == 0);
+    }
+  else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_NONHLE_NP, 1))
+    {
+      /* Like timed, but ignore any forces */
+      goto simple;
     }
   else
     {

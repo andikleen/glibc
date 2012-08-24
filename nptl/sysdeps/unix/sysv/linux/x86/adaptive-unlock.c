@@ -1,6 +1,6 @@
-/* Copyright (C) 2002, 2005 Free Software Foundation, Inc.
+/* Copyright (C) 2012 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
+   Contributed by Andi Kleen.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -15,26 +15,17 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
+#include "pthreadP.h"
+#include "lowlevellock.h"
+#include "hle.h"
 
-#include <errno.h>
-#include <pthreadP.h>
-
-
-int
-__pthread_mutexattr_settype (attr, kind)
-     pthread_mutexattr_t *attr;
-     int kind;
+int __lll_adaptive_unlock_hle(int *lock, int private)
 {
-  struct pthread_mutexattr *iattr;
-
-  if (kind < PTHREAD_MUTEX_NORMAL || kind > PTHREAD_MUTEX_TIMED_NONHLE_NP)
-    return EINVAL;
-
-  iattr = (struct pthread_mutexattr *) attr;
-
-  iattr->mutexkind = (iattr->mutexkind & PTHREAD_MUTEXATTR_FLAG_BITS) | kind;
-
+  /* When the lock was free we're in a transaction.
+     When you crash here you unlocked a free lock. */
+  if (*lock == 0)
+    XEND();
+  else
+    lll_unlock ((*lock), private);
   return 0;
 }
-weak_alias (__pthread_mutexattr_settype, pthread_mutexattr_setkind_np)
-strong_alias (__pthread_mutexattr_settype, pthread_mutexattr_settype)
