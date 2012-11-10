@@ -240,4 +240,3 @@ void (*const init_array []) (int, char **, char **)
   &elision_init
 };
 
-__pthread_abort_hook_t __tsx_abort_hook attribute_hidden;
