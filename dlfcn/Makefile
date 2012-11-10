@@ -35,7 +35,7 @@ endif
 ifeq (yes,$(build-shared))
 tests = glrefmain failtest tst-dladdr default errmsg1 tstcxaatexit \
 	bug-dlopen1 bug-dlsym1 tst-dlinfo bug-atexit1 bug-atexit2 \
-	bug-atexit3 tstatexit
+	tstatexit
 endif
 modules-names = glreflib1 glreflib2 glreflib3 failtestmod defaultmod1 \
 		defaultmod2 errmsg1mod modatexit modcxaatexit \
