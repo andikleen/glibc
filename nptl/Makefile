@@ -204,6 +204,9 @@ tests = tst-typesizes \
 	tst-attr1 tst-attr2 tst-attr3 \
 	tst-mutex1 tst-mutex2 tst-mutex3 tst-mutex4 tst-mutex5 tst-mutex6 \
 	tst-mutex7 tst-mutex8 tst-mutex9 tst-mutex5a tst-mutex7a \
+	tst-mutex8b tst-mutex8c tst-mutex8d tst-mutex8e tst-mutex8f \
+	tst-mutex5b tst-mutex5c tst-mutex5d tst-mutex5e \
+	tst-mutex7b tst-mutex7c tst-mutex7d tst-mutex7e \
 	tst-mutexpi1 tst-mutexpi2 tst-mutexpi3 tst-mutexpi4 tst-mutexpi5 \
 	tst-mutexpi5a tst-mutexpi6 tst-mutexpi7 tst-mutexpi7a tst-mutexpi8 \
 	tst-mutexpi9 \
@@ -262,10 +265,12 @@ tests = tst-typesizes \
 	tst-context1 \
 	tst-sched1 \
 	tst-backtrace1 \
-	tst-abstime \
+	tst-abstime tst-abstime1b tst-abstime1c \
 	tst-vfork1 tst-vfork2 tst-vfork1x tst-vfork2x \
 	tst-getpid1 tst-getpid2 tst-getpid3 \
-	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99)
+	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99) \
+	tst-initializers2 $(patsubst %,tst-initializers2-%,c89 gnu89 c99 gnu99) \
+	tst-elision1 tst-elision1b tst-elision2
 xtests = tst-setuid1 tst-setuid1-static tst-mutexpp1 tst-mutexpp6 tst-mutexpp10
 test-srcs = tst-oddstacklimit
 
@@ -436,10 +441,25 @@ CFLAGS-tst-initializers1-c89.c = $(CFLAGS-tst-initializers1-<)
 CFLAGS-tst-initializers1-c99.c = $(CFLAGS-tst-initializers1-<)
 CFLAGS-tst-initializers1-gnu89.c = $(CFLAGS-tst-initializers1-<)
 CFLAGS-tst-initializers1-gnu99.c = $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers2.c = -W -Wall -Werror
+CFLAGS-tst-initializers2-< = $(CFLAGS-tst-initializers2.c) \
+			     $(patsubst tst-initializers2-%.c,-std=%,$<)
+CFLAGS-tst-initializers2-c89.c = $(CFLAGS-tst-initializers2-<)
+CFLAGS-tst-initializers2-c99.c = $(CFLAGS-tst-initializers2-<)
+CFLAGS-tst-initializers2-gnu89.c = $(CFLAGS-tst-initializers2-<)
+CFLAGS-tst-initializers2-gnu99.c = $(CFLAGS-tst-initializers2-<)
 
 tst-cancel7-ARGS = --command "exec $(host-test-program-cmd)"
 tst-cancelx7-ARGS = $(tst-cancel7-ARGS)
 tst-umask1-ARGS = $(objpfx)tst-umask1.temp
+
+tst-abstime1-ENV = PTHREAD_MUTEX=none
+tst-mutex5-ENV = PTHREAD_MUTEX=none
+tst-mutex8-ENV = PTHREAD_MUTEX=none
+tst-mutex8-static-ENV = PTHREAD_MUTEX=none
+tst-mutex8f-ENV = PTHREAD_MUTEX=none
+tst-mutex8g-ENV = PTHREAD_MUTEX=elision
+tst-elision1b-ENV = PTHREAD_MUTEX=none PTHREAD_RWLOCK=none
 
 $(objpfx)tst-atfork2: $(libdl) $(shared-thread-library)
 LDFLAGS-tst-atfork2 = -rdynamic
