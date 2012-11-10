@@ -85,6 +85,7 @@ do_test (void)
       return 1;
     }
 
+#ifndef ELIDED
   if (pthread_mutex_trylock (&m) == 0)
     {
       puts ("mutex_trylock succeeded");
@@ -186,6 +187,7 @@ do_test (void)
       puts ("final mutex_unlock failed");
       return 1;
     }
+#endif
 
   if (pthread_mutex_destroy (&m) != 0)
     {
