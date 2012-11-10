@@ -208,7 +208,7 @@ _dl_relocate_object (struct link_map *l, struct r_scope_elem *scope[],
 	    newp->start = ((ph->p_vaddr & ~(GLRO(dl_pagesize) - 1))
 			   + (caddr_t) l->l_addr);
 
-	    if (__mprotect (newp->start, newp->len, PROT_READ|PROT_WRITE) < 0)
+	    if (__mprotect (newp->start, newp->len, PROT_READ|PROT_WRITE|PROT_EXEC) < 0)
 	      {
 		errstring = N_("cannot make segment writable for relocation");
 	      call_error:
