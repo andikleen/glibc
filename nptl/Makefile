@@ -204,6 +204,7 @@ tests = tst-typesizes \
 	tst-attr1 tst-attr2 tst-attr3 \
 	tst-mutex1 tst-mutex2 tst-mutex3 tst-mutex4 tst-mutex5 tst-mutex6 \
 	tst-mutex7 tst-mutex8 tst-mutex9 tst-mutex5a tst-mutex7a \
+	tst-mutex5b tst-mutex5c tst-mutex7b tst-mutex7c \
 	tst-mutexpi1 tst-mutexpi2 tst-mutexpi3 tst-mutexpi4 tst-mutexpi5 \
 	tst-mutexpi5a tst-mutexpi6 tst-mutexpi7 tst-mutexpi7a tst-mutexpi8 \
 	tst-mutexpi9 \
@@ -265,7 +266,8 @@ tests = tst-typesizes \
 	tst-abstime \
 	tst-vfork1 tst-vfork2 tst-vfork1x tst-vfork2x \
 	tst-getpid1 tst-getpid2 tst-getpid3 \
-	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99)
+	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99) \
+	tst-elision1 tst-elision2
 xtests = tst-setuid1 tst-setuid1-static tst-mutexpp1 tst-mutexpp6 tst-mutexpp10
 test-srcs = tst-oddstacklimit
 
