@@ -23,6 +23,10 @@
 #include <lowlevellock.h>
 #include <stap-probe.h>
 
+#ifndef lll_unlock_elision
+#define lll_unlock_elision(a,b) ({ lll_unlock (a,b); 0; })
+#endif
+
 static int
 internal_function
 __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
@@ -55,6 +59,12 @@ __pthread_mutex_unlock_usercnt (mutex, decr)
 
       return 0;
     }
+  else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
+    {
+      /* Don't reset the owner/users fields for HLE */
+      return lll_unlock_elision (mutex->__data.__lock, 
+				      PTHREAD_MUTEX_PSHARED (mutex));
+    }
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
       /* Recursive mutex.  */
@@ -66,7 +76,8 @@ __pthread_mutex_unlock_usercnt (mutex, decr)
 	return 0;
       goto normal;
     }
-  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1))
+  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1) ||
+	   __builtin_expect (type == PTHREAD_MUTEX_TIMED_NO_ELISION_NP, 1))
     goto normal;
   else
     {

@@ -25,6 +25,10 @@
 #include <lowlevellock.h>
 #include <stap-probe.h>
 
+#ifndef lll_lock_elision
+#define lll_lock_elision(lock, try_lock, private)	({ \
+      lll_lock (lock, private); 0; })
+#endif
 
 #ifndef LLL_MUTEX_LOCK
 # define LLL_MUTEX_LOCK(mutex) \
@@ -33,9 +37,15 @@
   lll_trylock ((mutex)->__data.__lock)
 # define LLL_ROBUST_MUTEX_LOCK(mutex, id) \
   lll_robust_lock ((mutex)->__data.__lock, id, \
-		   PTHREAD_ROBUST_MUTEX_PSHARED (mutex))
+		   PTHREAD_ROBUST_MUTEX_PSHARED (mutex))  
+# define LLL_MUTEX_LOCK_ELISION(mutex) \
+  lll_lock_elision ((mutex)->__data.__lock, (mutex)->__data.__spins, \
+		   PTHREAD_MUTEX_PSHARED (mutex))
 #endif
 
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
 
 static int __pthread_mutex_lock_full (pthread_mutex_t *mutex)
      __attribute_noinline__;
@@ -51,19 +61,36 @@ __pthread_mutex_lock (mutex)
 
   LIBC_PROBE (mutex_entry, 1, mutex);
 
-  if (__builtin_expect (type & ~PTHREAD_MUTEX_KIND_MASK_NP, 0))
+  if (__builtin_expect (type & ~(PTHREAD_MUTEX_KIND_MASK_NP
+				 | PTHREAD_MUTEX_ELISION_FLAGS_NP), 0))
     return __pthread_mutex_lock_full (mutex);
 
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
 
-  if (__builtin_expect (type, PTHREAD_MUTEX_TIMED_NP)
-      == PTHREAD_MUTEX_TIMED_NP)
+  if (ENABLE_ELISION) 
+    { 
+      if ((type & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0
+          && __pthread_force_elision
+	  && __is_smp)
+	mutex->__data.__kind |= PTHREAD_MUTEX_ELISION_NP;
+    }
+
+again:
+  if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_NP, 1))
     {
     simple:
       /* Normal mutex.  */
       LLL_MUTEX_LOCK (mutex);
       assert (mutex->__data.__owner == 0);
     }
+  else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
+    {
+      if (!ENABLE_ELISION)
+        goto simple;
+      /* Don't record owner or users for elision case. */
+      return LLL_MUTEX_LOCK_ELISION (mutex);
+    }
+
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
       /* Recursive mutex.  */
@@ -114,6 +141,12 @@ __pthread_mutex_lock (mutex)
 	  mutex->__data.__spins += (cnt - mutex->__data.__spins) / 8;
 	}
       assert (mutex->__data.__owner == 0);
+    }
+  else if (type & PTHREAD_MUTEX_ELISION_FLAGS_NP)
+    {
+      /* Cannot handle. Drop elision flags and try again */
+      type &= ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
+      goto again;
     }
   else
     {
