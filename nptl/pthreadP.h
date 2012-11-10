@@ -60,7 +60,7 @@
 /* Internal mutex type value.  */
 enum
 {
-  PTHREAD_MUTEX_KIND_MASK_NP = 3,
+  PTHREAD_MUTEX_KIND_MASK_NP = 7,
   PTHREAD_MUTEX_ROBUST_NORMAL_NP = 16,
   PTHREAD_MUTEX_ROBUST_RECURSIVE_NP
   = PTHREAD_MUTEX_ROBUST_NORMAL_NP | PTHREAD_MUTEX_RECURSIVE_NP,
@@ -93,12 +93,16 @@ enum
   PTHREAD_MUTEX_PP_ERRORCHECK_NP
   = PTHREAD_MUTEX_PRIO_PROTECT_NP | PTHREAD_MUTEX_ERRORCHECK_NP,
   PTHREAD_MUTEX_PP_ADAPTIVE_NP
-  = PTHREAD_MUTEX_PRIO_PROTECT_NP | PTHREAD_MUTEX_ADAPTIVE_NP
+  = PTHREAD_MUTEX_PRIO_PROTECT_NP | PTHREAD_MUTEX_ADAPTIVE_NP,
+  PTHREAD_MUTEX_ELISION_FLAGS_NP
+  = PTHREAD_MUTEX_ELISION_NP | PTHREAD_MUTEX_NO_ELISION_NP
 };
 #define PTHREAD_MUTEX_PSHARED_BIT 128
 
 #define PTHREAD_MUTEX_TYPE(m) \
   ((m)->__data.__kind & 127)
+#define PTHREAD_MUTEX_TYPE_EL(m) \
+  ((m)->__data.__kind & (127|PTHREAD_MUTEX_ELISION_FLAGS_NP))
 
 #if LLL_PRIVATE == 0 && LLL_SHARED == 128
 # define PTHREAD_MUTEX_PSHARED(m) \
@@ -131,7 +135,6 @@ enum
 #define PTHREAD_MUTEXATTR_FLAG_BITS \
   (PTHREAD_MUTEXATTR_FLAG_ROBUST | PTHREAD_MUTEXATTR_FLAG_PSHARED \
    | PTHREAD_MUTEXATTR_PROTOCOL_MASK | PTHREAD_MUTEXATTR_PRIO_CEILING_MASK)
-
 
 /* Check whether rwlock prefers readers.   */
 #define PTHREAD_RWLOCK_PREFER_READER_P(rwlock) \
@@ -570,6 +573,8 @@ extern void __nptl_set_robust (struct pthread *self);
 extern void __free_stacks (size_t limit) attribute_hidden;
 
 extern void __wait_lookup_done (void) attribute_hidden;
+
+extern int __pthread_force_elision attribute_hidden;
 
 #ifdef SHARED
 # define PTHREAD_STATIC_FN_REQUIRE(name)
