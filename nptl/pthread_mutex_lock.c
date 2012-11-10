@@ -113,7 +113,7 @@ again:
 
       assert (mutex->__data.__owner == 0);
       mutex->__data.__count = 1;
-    }
+    } 
   else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1))
     {
       if (! __is_smp)
