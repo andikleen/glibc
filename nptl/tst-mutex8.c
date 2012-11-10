@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef NAME
+#define NAME "normal"
+#endif
 
 static pthread_mutex_t *m;
 static pthread_barrier_t b;
@@ -93,6 +96,8 @@ tf (void *arg)
 static int
 check_type (const char *mas, pthread_mutexattr_t *ma)
 {
+  int e __attribute__((unused));
+
   if (pthread_mutex_init (m, ma) != 0)
     {
       printf ("1st mutex_init failed for %s\n", mas);
@@ -117,7 +122,10 @@ check_type (const char *mas, pthread_mutexattr_t *ma)
       return 1;
     }
 
-  int e = pthread_mutex_destroy (m);
+  /* Elided mutexes don't fail destroy. If elision is not explicitly disabled
+     we don't know, so can also not check this.  */
+#if !defined(USE_ELISION) && defined(USE_NO_ELISION)
+  e = pthread_mutex_destroy (m);
   if (e == 0)
     {
       printf ("mutex_destroy of self-locked mutex succeeded for %s\n", mas);
@@ -129,6 +137,7 @@ check_type (const char *mas, pthread_mutexattr_t *ma)
 	      mas);
       return 1;
     }
+#endif
 
   if (pthread_mutex_unlock (m) != 0)
     {
@@ -142,6 +151,8 @@ check_type (const char *mas, pthread_mutexattr_t *ma)
       return 1;
     }
 
+  /* Elided mutexes don't fail destroy.  */
+#if !defined(USE_ELISION) && defined(USE_NO_ELISION)
   e = pthread_mutex_destroy (m);
   if (e == 0)
     {
@@ -155,6 +166,7 @@ mutex_destroy of self-trylocked mutex did not return EBUSY %s\n",
 	      mas);
       return 1;
     }
+#endif
 
   if (pthread_mutex_unlock (m) != 0)
     {
@@ -189,6 +201,8 @@ mutex_destroy of self-trylocked mutex did not return EBUSY %s\n",
       return 1;
     }
 
+  /* Elided mutexes don't fail destroy.  */
+#if !defined(USE_ELISION) && defined(USE_NO_ELISION)
   e = pthread_mutex_destroy (m);
   if (e == 0)
     {
@@ -201,6 +215,7 @@ mutex_destroy of self-trylocked mutex did not return EBUSY %s\n",
 mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
       return 1;
     }
+#endif
 
   done = true;
   if (pthread_cond_signal (&c) != 0)
@@ -259,6 +274,8 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
       return 1;
     }
 
+  /* Elided mutexes don't fail destroy.  */
+#if !defined(USE_ELISION) && defined(USE_NO_ELISION)
   e = pthread_mutex_destroy (m);
   if (e == 0)
     {
@@ -273,6 +290,7 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
 	      mas);
       return 1;
     }
+#endif
 
   if (pthread_cancel (th) != 0)
     {
@@ -304,6 +322,7 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
 static int
 do_test (void)
 {
+  pthread_mutexattr_t ma;
   pthread_mutex_t mm;
   m = &mm;
 
@@ -319,10 +338,25 @@ do_test (void)
       return 1;
     }
 
-  puts ("check normal mutex");
-  int res = check_type ("normal", NULL);
+#ifdef TYPE
+  if (pthread_mutexattr_init (&ma) != 0)
+    {
+      puts ("0th mutexattr_init failed");
+      return 1;
+    }
+  if (pthread_mutexattr_settype (&ma, TYPE) != 0)
+    {
+      puts ("0th mutexattr_settype failed");
+      return 1;
+    }
 
-  pthread_mutexattr_t ma;
+  puts ("check " NAME " mutex");
+  int res = check_type (NAME, &ma);
+#else
+  puts ("check " NAME " mutex");
+  int res = check_type (NAME, NULL);
+#endif
+
   if (pthread_mutexattr_init (&ma) != 0)
     {
       puts ("1st mutexattr_init failed");

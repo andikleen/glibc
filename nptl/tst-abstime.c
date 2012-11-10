@@ -21,9 +21,13 @@
 #include <semaphore.h>
 #include <stdio.h>
 
+#ifndef MUTEX_TYPE
+#define MUTEX_TYPE PTHREAD_MUTEX_INITIALIZER
+#endif
+
 static pthread_cond_t c = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t m1 = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t m2 = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t m1 = MUTEX_TYPE;
+static pthread_mutex_t m2 = MUTEX_TYPE;
 static pthread_rwlock_t rw1 = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_rwlock_t rw2 = PTHREAD_RWLOCK_INITIALIZER;
 static sem_t sem;
