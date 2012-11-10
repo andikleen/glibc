@@ -25,6 +25,9 @@
 
 #include <stap-probe.h>
 
+#ifndef lll_timedlock_elision 
+#define lll_timedlock_elision(a,dummy,b,c) lll_timedlock(a, b, c)
+#endif
 
 int
 pthread_mutex_timedlock (mutex, abstime)
@@ -77,12 +80,21 @@ pthread_mutex_timedlock (mutex, abstime)
 
       /* FALLTHROUGH */
 
+    case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     case PTHREAD_MUTEX_TIMED_NP:
     simple:
       /* Normal mutex.  */
       result = lll_timedlock (mutex->__data.__lock, abstime,
 			      PTHREAD_MUTEX_PSHARED (mutex));
       break;
+
+    case PTHREAD_MUTEX_TIMED_ELISION_NP:
+      /* Don't record ownership */
+      return lll_timedlock_elision (mutex->__data.__lock, 
+					 mutex->__data.__spins, 
+					 abstime,
+					 PTHREAD_MUTEX_PSHARED (mutex));
+
 
     case PTHREAD_MUTEX_ADAPTIVE_NP:
       if (! __is_smp)

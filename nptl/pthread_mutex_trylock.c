@@ -22,6 +22,13 @@
 #include "pthreadP.h"
 #include <lowlevellock.h>
 
+#ifndef lll_trylock_elision
+#define lll_trylock_elision(a,t) lll_trylock(a)
+#endif
+
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
 
 int
 __pthread_mutex_trylock (mutex)
@@ -57,12 +64,29 @@ __pthread_mutex_trylock (mutex)
 	}
       break;
 
-    case PTHREAD_MUTEX_ERRORCHECK_NP:
+    case PTHREAD_MUTEX_TIMED_ELISION_NP:
+    elision:
+      if (lll_trylock_elision (mutex->__data.__lock, 
+                                    mutex->__data.__spins) != 0)
+        break;
+      /* Don't record the ownership. */
+      return 0;
+
     case PTHREAD_MUTEX_TIMED_NP:
+      if (ENABLE_ELISION
+	  && (PTHREAD_MUTEX_TYPE (mutex) & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0
+	  && __pthread_force_elision)
+	{
+	  mutex->__data.__kind |= PTHREAD_MUTEX_ELISION_NP;
+	  goto elision;
+	}
+      /*FALL THROUGH*/
+    case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
+    case PTHREAD_MUTEX_ERRORCHECK_NP:
     case PTHREAD_MUTEX_ADAPTIVE_NP:
       /* Normal mutex.  */
-      if (lll_trylock (mutex->__data.__lock) != 0)
-	break;
+        if (lll_trylock (mutex->__data.__lock) != 0)
+	  break;
 
       /* Record the ownership.  */
       mutex->__data.__owner = id;
@@ -378,4 +402,9 @@ __pthread_mutex_trylock (mutex)
 
   return EBUSY;
 }
+
+#ifndef __pthread_mutex_trylock
+#ifndef pthread_mutex_trylock
 strong_alias (__pthread_mutex_trylock, pthread_mutex_trylock)
+#endif
+#endif
