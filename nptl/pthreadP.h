@@ -573,6 +573,8 @@ extern void __free_stacks (size_t limit) attribute_hidden;
 
 extern void __wait_lookup_done (void) attribute_hidden;
 
+extern int __pthread_force_elision attribute_hidden;
+
 #ifdef SHARED
 # define PTHREAD_STATIC_FN_REQUIRE(name)
 #else
