@@ -50,5 +50,6 @@ extern int __pthread_mutex_trylock_rtm (pthread_mutex_t *);
 extern int __pthread_mutex_trylock (pthread_mutex_t *);
 
 #define SUPPORTS_ELISION 1
+#define SUPPORTS_ABORT_HOOK 1
 
 #endif
