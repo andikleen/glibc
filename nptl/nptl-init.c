@@ -36,6 +36,8 @@
 #include <lowlevellock.h>
 #include <kernel-features.h>
 
+/* Force elision for all new locks.  */
+int __pthread_force_elision attribute_hidden;
 
 /* Size and alignment of static TLS block.  */
 size_t __static_tls_size;

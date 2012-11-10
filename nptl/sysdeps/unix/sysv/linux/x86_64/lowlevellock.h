@@ -427,6 +427,13 @@ LLL_STUB_UNWIND_INFO_END
 		       : "memory", "cx", "cc", "r10", "r11");		      \
      result; })
 
+extern int __lll_timedlock_elision (int *futex, short *try_lock,
+					 const struct timespec *timeout,
+					 int private) attribute_hidden;
+
+#define lll_timedlock_elision(futex, try_lock, timeout, private)	\
+  __lll_timedlock_elision(&(futex), &(try_lock), timeout, private)
+
 #define lll_robust_timedlock(futex, timeout, id, private) \
   ({ int result, ignore1, ignore2, ignore3;				      \
      __asm __volatile (LOCK_INSTR "cmpxchgl %1, %4\n\t"			      \
@@ -596,6 +603,22 @@ extern int __lll_timedwait_tid (int *tid, const struct timespec *abstime)
 	  __result = __lll_timedwait_tid (&tid, abstime);		      \
       }									      \
     __result; })
+
+extern int __lll_lock_elision (int *futex, short *try_lock, int private)
+  attribute_hidden;
+
+extern int __lll_unlock_elision (int *lock, int private)
+  attribute_hidden;
+
+extern int __lll_trylock_elision (int *lock, short *try_lock, int upgraded)
+  attribute_hidden;
+
+#define lll_lock_elision(futex, try_lock, private) \
+  __lll_lock_elision (&(futex), &(try_lock), private)
+#define lll_unlock_elision(futex, private) \
+  __lll_unlock_elision (&(futex), private)
+#define lll_trylock_elision(futex, try_lock, upgraded) \
+  __lll_trylock_elision (&(futex), &(try_lock), upgraded)
 
 #endif  /* !__ASSEMBLER__ */
 
