@@ -22,6 +22,7 @@
 #include <pthread-errnos.h>
 #include <kernel-features.h>
 #include <stap-probe.h>
+#include <hle.h>
 
 	.text
 
@@ -33,6 +34,66 @@ __pthread_rwlock_rdlock:
 
 	LIBC_PROBE (rdlock_entry, 1, %rdi)
 
+	cmpl  $0,__rwlock_rtm_enabled(%rip)
+	jz    not_elided_rdlock
+
+	mov   __rwlock_rtm_read_retries(%rip),%esi
+
+try_trans_rdlock:
+	XBEGIN abort_rdlock
+	
+	/* Lock reader/writer free? */
+	cmpl  $0,WRITER(%rdi)
+	jnz   1f
+	cmpl  $0,NR_READERS(%rdi)
+	jnz   1f
+	
+	/* Lock is free. Run with transaction */
+	xor   %eax,%eax
+	ret
+
+	/* Lock is not free. Run */
+1:	XEND
+	jmp not_elided_rdlock
+
+	/* Abort happened. */
+abort_rdlock:
+	/* Call the abort hook */
+        cmpq  $0,__tsx_abort_hook(%rip)
+        jz    1f
+
+	push  %rdi
+	cfi_adjust_cfa_offset(8)			
+	push  %rsi
+	cfi_adjust_cfa_offset(8)		
+        push  %rax
+	cfi_adjust_cfa_offset(8)	
+        mov   %eax,%edi
+        call  *__tsx_abort_hook(%rip)
+        pop   %rax
+	cfi_adjust_cfa_offset(-8)
+	pop   %rsi
+	cfi_adjust_cfa_offset(-8)
+	pop   %rdi
+	cfi_adjust_cfa_offset(-8)		
+
+1:
+
+	testl $_XABORT_CONFLICT,%eax
+	jz    not_elided_rdlock
+	
+	/* For a reader that aborts due a conflict retry speculation
+	   a limited number of times. This way when some reader aborts
+	   because the reader count is written the other readers will
+	   still elide, at the cost of retrying the speculation. */
+
+	dec   %esi
+	jnz   try_trans_rdlock
+
+	/* Otherwise we just fall back directly to the lock. 
+	   Here's the place to add more adaptation. */
+		
+not_elided_rdlock:	
 	xorq	%r10, %r10
 
 	/* Get the lock.  */
