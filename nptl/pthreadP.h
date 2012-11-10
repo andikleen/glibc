@@ -495,7 +495,9 @@ extern void __pthread_disable_asynccancel (int oldtype)
 #if defined NOT_IN_libc && defined IS_IN_libpthread
 hidden_proto (__pthread_mutex_init)
 hidden_proto (__pthread_mutex_destroy)
+#if 0
 hidden_proto (__pthread_mutex_lock)
+#endif
 hidden_proto (__pthread_mutex_unlock)
 hidden_proto (__pthread_rwlock_rdlock)
 hidden_proto (__pthread_rwlock_wrlock)
