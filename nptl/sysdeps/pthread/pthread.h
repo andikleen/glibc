@@ -1176,6 +1176,16 @@ extern int pthread_atfork (void (*__prepare) (void),
 			   void (*__child) (void)) __THROW;
 
 
+#ifdef __USE_GNU
+typedef void (*__pthread_abort_hook_t) (unsigned);
+
+/* Set an abort hook HOOK that is called when a lock transaction aborts.
+   The HOOK is called with the system specific transaction abort status.
+   Returns the old hook. */
+
+extern __pthread_abort_hook_t __pthread_set_abort_hook (__pthread_abort_hook_t hook);
+#endif
+
 #ifdef __USE_EXTERN_INLINES
 /* Optimizations.  */
 __extern_inline int
