@@ -8,6 +8,9 @@ GLIBC_2.12
  pthread_mutexattr_getrobust F
  pthread_mutexattr_setrobust F
  pthread_setname_np F
+GLIBC_2.17
+ GLIBC_2.17 A
+ __pthread_set_abort_hook F
 GLIBC_2.2.5
  GLIBC_2.2.5 A
  _IO_flockfile F

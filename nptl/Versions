@@ -252,6 +252,10 @@ libpthread {
     pthread_setname_np; pthread_getname_np;
   };
 
+  GLIBC_2.17 {
+    __pthread_set_abort_hook;
+  };
+
   GLIBC_PRIVATE {
     __pthread_initialize_minimal;
     __pthread_clock_gettime; __pthread_clock_settime;
