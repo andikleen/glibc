@@ -60,6 +60,7 @@
 	.globl _init
 	.type _init, @function
 _init:
+	movq %rdx,%rdi		/* environment */
 	/* Maintain 16-byte stack alignment for called functions.  */
 	subq $8, %rsp
 #if PREINIT_FUNCTION_WEAK

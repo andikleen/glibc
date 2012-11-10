@@ -62,7 +62,8 @@
 _init:
 	pushl %ebx
 	/* Maintain 16-byte stack alignment for called functions.  */
-	subl $8, %esp
+	subl  $4,%esp
+	push  5*4(%esp)		/* push envp */
 	LOAD_PIC_REG (bx)
 #if PREINIT_FUNCTION_WEAK
 	movl PREINIT_FUNCTION@GOT(%ebx), %eax

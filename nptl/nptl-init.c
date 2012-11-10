@@ -278,8 +278,14 @@ extern void **__libc_dl_error_tsd (void) __attribute__ ((const));
 static bool __nptl_initial_report_events __attribute_used__;
 
 void
-__pthread_initialize_minimal_internal (void)
+__pthread_initialize_minimal_internal (char **envp)
 {
+#if defined(__i386__) || defined(__x86_64__)
+  /* Initialize environment early so that init functions can use
+     getenv. */
+  __environ = envp;
+#endif
+
 #ifndef SHARED
   /* Unlike in the dynamically linked case the dynamic linker has not
      taken care of initializing the TLS data structures.  */
