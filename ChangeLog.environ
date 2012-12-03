@@ -1,0 +1,11 @@
+2012-12-03  H.J. Lu  <hongjiu.lu@intel.com>
+
+	* sysdeps/i386/dl-irel.h (elf_ifunc_invoke): Pass __environ
+	to the IFUNC function.
+	* sysdeps/i386/dl-machine.h (elf_machine_rel): Likewise.
+	(elf_machine_rela): Likewise.
+	(elf_machine_lazy_rel): Likewise.
+	(elf_machine_lazy_rela): Likewise.
+	* sysdeps/x86_64/dl-irel.h (elf_ifunc_invoke): Likewise.
+	* sysdeps/x86_64/dl-machine.h (elf_machine_rela): Likewise.
+	(elf_machine_lazy_rel): Likewise.

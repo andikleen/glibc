@@ -282,7 +282,7 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 			       0)
 	  && __builtin_expect (sym->st_shndx != SHN_UNDEF, 1)
 	  && __builtin_expect (!skip_ifunc, 1))
-	value = ((ElfW(Addr) (*) (void)) value) ();
+	value = ((ElfW(Addr) (*) (char **)) value) (__environ);
 
       switch (r_type)
 	{
@@ -446,7 +446,7 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 #  endif
 	case R_X86_64_IRELATIVE:
 	  value = map->l_addr + reloc->r_addend;
-	  value = ((ElfW(Addr) (*) (void)) value) ();
+	  value = ((ElfW(Addr) (*) (char **)) value) (__environ);
 	  *reloc_addr = value;
 	  break;
 	default:
@@ -508,7 +508,7 @@ elf_machine_lazy_rel (struct link_map *map,
     {
       ElfW(Addr) value = map->l_addr + reloc->r_addend;
       if (__builtin_expect (!skip_ifunc, 1))
-	value = ((ElfW(Addr) (*) (void)) value) ();
+	value = ((ElfW(Addr) (*) (char **)) value) (__environ);
       *reloc_addr = value;
     }
   else

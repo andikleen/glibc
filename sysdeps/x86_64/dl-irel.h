@@ -29,7 +29,7 @@ static inline ElfW(Addr)
 __attribute ((always_inline))
 elf_ifunc_invoke (ElfW(Addr) addr)
 {
-  return ((ElfW(Addr) (*) (void)) (addr)) ();
+  return ((ElfW(Addr) (*) (char **)) (addr)) (__environ);
 }
 
 static inline void

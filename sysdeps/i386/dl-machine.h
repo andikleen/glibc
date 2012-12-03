@@ -344,7 +344,7 @@ elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
 			       0)
 	  && __builtin_expect (sym->st_shndx != SHN_UNDEF, 1)
 	  && __builtin_expect (!skip_ifunc, 1))
-	value = ((Elf32_Addr (*) (void)) value) ();
+	value = ((Elf32_Addr (*) (char **)) value) (__environ);
 
       switch (r_type)
 	{
@@ -468,7 +468,7 @@ elf_machine_rel (struct link_map *map, const Elf32_Rel *reloc,
 	  break;
 	case R_386_IRELATIVE:
 	  value = map->l_addr + *reloc_addr;
-	  value = ((Elf32_Addr (*) (void)) value) ();
+	  value = ((Elf32_Addr (*) (char **)) (value)) (__environ);
 	  *reloc_addr = value;
 	  break;
 	default:
@@ -503,7 +503,7 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 	  && __builtin_expect (sym->st_shndx != SHN_UNDEF, 1)
 	  && __builtin_expect (ELFW(ST_TYPE) (sym->st_info) == STT_GNU_IFUNC, 0)
 	  && __builtin_expect (!skip_ifunc, 1))
-	value = ((Elf32_Addr (*) (void)) value) ();
+	value = ((Elf32_Addr (*) (char **)) value) (__environ);
 
       switch (ELF32_R_TYPE (reloc->r_info))
 	{
@@ -612,7 +612,7 @@ elf_machine_rela (struct link_map *map, const Elf32_Rela *reloc,
 #  endif /* !RESOLVE_CONFLICT_FIND_MAP */
 	case R_386_IRELATIVE:
 	  value = map->l_addr + reloc->r_addend;
-	  value = ((Elf32_Addr (*) (void)) value) ();
+	  value = ((Elf32_Addr (*) (char **)) (value)) (__environ);
 	  *reloc_addr = value;
 	  break;
 	default:
@@ -714,7 +714,7 @@ elf_machine_lazy_rel (struct link_map *map,
     {
       Elf32_Addr value = map->l_addr + *reloc_addr;
       if (__builtin_expect (!skip_ifunc, 1))
-	value = ((Elf32_Addr (*) (void)) value) ();
+	value = ((Elf32_Addr (*) (char **)) value) (__environ);
       *reloc_addr = value;
     }
   else
@@ -745,7 +745,7 @@ elf_machine_lazy_rela (struct link_map *map,
     {
       Elf32_Addr value = map->l_addr + reloc->r_addend;
       if (__builtin_expect (!skip_ifunc, 1))
-	value = ((Elf32_Addr (*) (void)) value) ();
+	value = ((Elf32_Addr (*) (char **)) value) (__environ);
       *reloc_addr = value;
     }
   else
