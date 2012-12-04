@@ -96,6 +96,10 @@ do_test (void)
 
   ts.tv_sec += 2;	/* Wait 2 seconds.  */
 
+  /* Timed locks will succeed with elision */
+  if (m.__data.__kind & PTHREAD_MUTEX_ELISION_NP)
+    goto finish;
+
   err = pthread_mutex_timedlock (&m, &ts);
   if (err == 0)
     {
@@ -186,6 +190,8 @@ do_test (void)
       puts ("final mutex_unlock failed");
       return 1;
     }
+
+finish:
 
   if (pthread_mutex_destroy (&m) != 0)
     {

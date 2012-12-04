@@ -402,7 +402,7 @@ do_test (void)
       puts ("4th mutexattr_init failed");
       return 1;
     }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_NO_ELISION_NP) != 0)
+  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_TIMED_NO_ELISION_NP) != 0)
     {
       puts ("4th mutexattr_settype failed");
       return 1;
