@@ -29,6 +29,14 @@
 #define lll_timedlock_elision(a,dummy,b,c) lll_timedlock(a, b, c)
 #endif
 
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
+
+#ifndef FORCE_ELISION
+#define FORCE_ELISION(m, s)
+#endif
+
 int
 pthread_mutex_timedlock (mutex, abstime)
      pthread_mutex_t *mutex;
@@ -43,7 +51,7 @@ pthread_mutex_timedlock (mutex, abstime)
   /* We must not check ABSTIME here.  If the thread does not block
      abstime must not be checked for a valid value.  */
 
-  switch (__builtin_expect (PTHREAD_MUTEX_TYPE (mutex),
+  switch (__builtin_expect (PTHREAD_MUTEX_TYPE_EL (mutex),
 			    PTHREAD_MUTEX_TIMED_NP))
     {
       /* Recursive mutex.  */
@@ -80,8 +88,9 @@ pthread_mutex_timedlock (mutex, abstime)
 
       /* FALLTHROUGH */
 
-    case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     case PTHREAD_MUTEX_TIMED_NP:
+      FORCE_ELISION (mutex, goto elision);
+    case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     simple:
       /* Normal mutex.  */
       result = lll_timedlock (mutex->__data.__lock, abstime,
@@ -89,6 +98,7 @@ pthread_mutex_timedlock (mutex, abstime)
       break;
 
     case PTHREAD_MUTEX_TIMED_ELISION_NP:
+    elision:
       /* Don't record ownership */
       return lll_timedlock_elision (mutex->__data.__lock, 
 					 mutex->__data.__spins, 
@@ -97,8 +107,12 @@ pthread_mutex_timedlock (mutex, abstime)
 
 
     case PTHREAD_MUTEX_ADAPTIVE_NP:
+    case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
+    case PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP:
       if (! __is_smp)
 	goto simple;
+
+      FORCE_ELISION (mutex, goto elision);
 
       if (lll_trylock (mutex->__data.__lock) != 0)
 	{
@@ -504,4 +518,6 @@ pthread_mutex_timedlock (mutex, abstime)
 
  out:
   return result;
+
+  goto elision; /* Avoid warning */
 }

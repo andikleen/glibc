@@ -47,6 +47,10 @@
 #define ENABLE_ELISION 0
 #endif
 
+#ifndef FORCE_ELISION
+#define FORCE_ELISION(m, s)
+#endif
+
 static int __pthread_mutex_lock_full (pthread_mutex_t *mutex)
      __attribute_noinline__;
 
@@ -57,7 +61,7 @@ __pthread_mutex_lock (mutex)
 {
   assert (sizeof (mutex->__size) >= sizeof (mutex->__data));
 
-  unsigned int type = PTHREAD_MUTEX_TYPE (mutex);
+  unsigned int type = PTHREAD_MUTEX_TYPE_EL (mutex);
 
   LIBC_PROBE (mutex_entry, 1, mutex);
 
@@ -67,26 +71,21 @@ __pthread_mutex_lock (mutex)
 
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
 
-  if (ENABLE_ELISION) 
-    { 
-      if ((type & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0
-          && __pthread_force_elision
-	  && __is_smp)
-	mutex->__data.__kind |= PTHREAD_MUTEX_ELISION_NP;
-    }
-
 again:
   if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_NP, 1))
     {
+      FORCE_ELISION (mutex, goto elision);
     simple:
       /* Normal mutex.  */
       LLL_MUTEX_LOCK (mutex);
+      if (mutex->__data.__owner != 0) { char buf[100]; sprintf(buf,"bad owner: type %x\n", (mutex->__data.__kind)); write(2,buf,strlen(buf)); }
       assert (mutex->__data.__owner == 0);
     }
   else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
     {
       if (!ENABLE_ELISION)
         goto simple;
+    elision:
       /* Don't record owner or users for elision case. */
       return LLL_MUTEX_LOCK_ELISION (mutex);
     }
@@ -166,6 +165,8 @@ again:
   LIBC_PROBE (mutex_acquired, 1, mutex);
 
   return 0;
+
+  goto elision; /* Avoid warning */
 }
 
 static int

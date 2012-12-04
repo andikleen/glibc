@@ -38,8 +38,9 @@ __pthread_mutex_unlock_usercnt (mutex, decr)
      pthread_mutex_t *mutex;
      int decr;
 {
-  int type = PTHREAD_MUTEX_TYPE (mutex);
-  if (__builtin_expect (type & ~PTHREAD_MUTEX_KIND_MASK_NP, 0))
+  int type = PTHREAD_MUTEX_TYPE_EL (mutex);
+  if (__builtin_expect (type & 
+		~(PTHREAD_MUTEX_KIND_MASK_NP|PTHREAD_MUTEX_ELISION_FLAGS_NP), 0))
     return __pthread_mutex_unlock_full (mutex, decr);
 
   if (__builtin_expect (type, PTHREAD_MUTEX_TIMED_NP)
@@ -59,9 +60,10 @@ __pthread_mutex_unlock_usercnt (mutex, decr)
 
       return 0;
     }
-  else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
+  else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1)
+           || (type == PTHREAD_MUTEX_ADAPTIVE_ELISION_NP))
     {
-      /* Don't reset the owner/users fields for HLE */
+      /* Don't reset the owner/users fields for elision */
       return lll_unlock_elision (mutex->__data.__lock, 
 				      PTHREAD_MUTEX_PSHARED (mutex));
     }

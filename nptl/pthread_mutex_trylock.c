@@ -30,6 +30,9 @@
 #define ENABLE_ELISION 0
 #endif
 
+/* We don't force elision in trylock, because this can lead to inconsistent
+   lock state if the lock was actually busy. */
+
 int
 __pthread_mutex_trylock (mutex)
      pthread_mutex_t *mutex;
@@ -37,7 +40,7 @@ __pthread_mutex_trylock (mutex)
   int oldval;
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
 
-  switch (__builtin_expect (PTHREAD_MUTEX_TYPE (mutex),
+  switch (__builtin_expect (PTHREAD_MUTEX_TYPE_EL (mutex),
 			    PTHREAD_MUTEX_TIMED_NP))
     {
       /* Recursive mutex.  */
@@ -65,7 +68,6 @@ __pthread_mutex_trylock (mutex)
       break;
 
     case PTHREAD_MUTEX_TIMED_ELISION_NP:
-    elision:
       if (lll_trylock_elision (mutex->__data.__lock, 
                                     mutex->__data.__spins) != 0)
         break;
@@ -73,17 +75,10 @@ __pthread_mutex_trylock (mutex)
       return 0;
 
     case PTHREAD_MUTEX_TIMED_NP:
-      if (ENABLE_ELISION
-	  && (PTHREAD_MUTEX_TYPE (mutex) & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0
-	  && __pthread_force_elision)
-	{
-	  mutex->__data.__kind |= PTHREAD_MUTEX_ELISION_NP;
-	  goto elision;
-	}
+    case PTHREAD_MUTEX_ADAPTIVE_NP:
       /*FALL THROUGH*/
     case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     case PTHREAD_MUTEX_ERRORCHECK_NP:
-    case PTHREAD_MUTEX_ADAPTIVE_NP:
       /* Normal mutex.  */
         if (lll_trylock (mutex->__data.__lock) != 0)
 	  break;

@@ -16,6 +16,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>. */
 #include "elision-conf.h"
+#include "force-elision.h"
 #ifdef SHARED
 #define ENABLE_ELISION 1
 #define __pthread_mutex_lock __pthread_mutex_lock_rtm
