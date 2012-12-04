@@ -32,12 +32,15 @@ struct elision_config
 };
 
 extern struct elision_config __elision_aconf attribute_hidden;
-extern void elision_aconf_setup(const char *s) attribute_hidden;
 
 extern __pthread_abort_hook_t __tsx_abort_hook;
 
 extern int __rwlock_rtm_enabled;
 extern int __elision_available;
+
+extern void elision_init (char **) attribute_hidden;
+
+/* Use own code to avoid ifunc problems with the main cpuid code */
 
 #define CPUID_FEATURE_RTM (1U << 11)
 

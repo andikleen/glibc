@@ -760,8 +760,8 @@ for linking")
 /* The body of the function is supposed to use __get_cpu_features
    which will, if necessary, initialize the data first.  */
 #define libm_ifunc(name, expr)						\
-  extern void *name##_ifunc (void) __asm__ (#name);			\
-  void *name##_ifunc (void)						\
+  extern void *name##_ifunc (char **) __asm__ (#name);			\
+  void *name##_ifunc (char **environ)					\
   {									\
     __typeof (name) *res = expr;					\
     return res;								\

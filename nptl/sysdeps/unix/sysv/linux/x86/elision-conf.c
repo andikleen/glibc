@@ -52,7 +52,7 @@ static const struct tune tunings[] =
 
 #define PAIR(x) x, sizeof (x)-1
 
-void 
+static void 
 elision_aconf_setup(const char *s)
 {
   int i;
@@ -87,26 +87,45 @@ elision_aconf_setup(const char *s)
   __write (2, PAIR("pthreads: invalid PTHREAD_MUTEX syntax\n"));
 }
 
-
 int __rwlock_rtm_enabled attribute_hidden;
 int __rwlock_rtm_read_retries attribute_hidden = 3;
 int __elision_available attribute_hidden;
 
 #define PAIR(x) x, sizeof (x)-1
 
-static void __attribute__((constructor)) 
-elision_init (void)
+static char *
+next_env_entry (char first, char ***position)
 {
-  char *s;
+  char **current = *position;
+  char *result = NULL;
 
-  if (cpu_has_rtm()) 
+  while (*current != NULL)
     {
-      __pthread_force_elision = 1;
-      __elision_available = 1;
+      if ((*current)[0] == first) 
+	{
+	  result = *current;
+	  *position = ++current;
+	  break;
+	}
+
+      ++current;
     }
-  s = getenv ("PTHREAD_MUTEX");
+
+  return result;
+}
+
+static inline void
+match (const char *line, const char *var, int len, const char **res)
+{
+  if (!strncmp (line, var, len))
+    *res = line + len;
+}
+
+static void
+elision_mutex_init (const char *s)
+{
   if (!s)
-    goto check_rwlock;
+    return;
   if (!strncmp (s, "adaptive", 8) && (s[8] == 0 || s[8] == ':'))
     {
       __pthread_force_elision = __elision_available;
@@ -122,10 +141,12 @@ elision_init (void)
   else if (!strcmp (s, "none"))
     __pthread_force_elision = 0;
   else 
-    __write (2, PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));
+    __write (2, PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));  
+}
 
-check_rwlock:
-  s = getenv ("PTHREAD_RWLOCK");
+static void
+elision_rwlock_init (const char *s)
+{
   if (!s)
     {
       __rwlock_rtm_enabled = __elision_available;
@@ -150,6 +171,34 @@ check_rwlock:
     __rwlock_rtm_enabled = 0;
   else
     __write (2, PAIR("pthreads: Unknown setting for PTHREAD_RWLOCK\n"));
+}
+
+void attribute_hidden
+elision_init (char **environ)
+{
+  char *envline;
+  const char *mutex = NULL, *rwlock = NULL;
+  static int initialized;
+  
+  /* Races are tolerable */
+  if (initialized)
+    return;
+  initialized = 1;
+
+  if (cpu_has_rtm()) 
+    {
+      __pthread_force_elision = 1;
+      __elision_available = 1;
+    }
+
+  while ((envline = next_env_entry ('P', &environ)) != NULL)
+    {
+      match (envline, PAIR("PTHREAD_MUTEX="), &mutex);
+      match (envline, PAIR("PTHREAD_RWLOCK="), &rwlock);
+    }
+
+  elision_mutex_init (mutex);
+  elision_rwlock_init (rwlock);
 }
 
 /* Allow user programs to hook into the abort handler.

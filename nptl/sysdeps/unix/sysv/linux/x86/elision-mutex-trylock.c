@@ -30,8 +30,8 @@
 #ifdef SHARED
 extern int __pthread_mutex_trylock_nortm (pthread_mutex_t *);
 extern int __pthread_mutex_trylock (pthread_mutex_t *);
-libm_ifunc (__pthread_mutex_trylock, cpu_has_rtm () ?
-	    __pthread_mutex_trylock_rtm : __pthread_mutex_trylock_nortm);
+libm_ifunc (__pthread_mutex_trylock, (elision_init (environ), 
+	      cpu_has_rtm () ? __pthread_mutex_trylock_rtm : __pthread_mutex_trylock_nortm));
 strong_alias(__pthread_mutex_trylock, pthread_mutex_trylock);
 /* hidden_def (__pthread_mutex_trylock); */
 #endif
