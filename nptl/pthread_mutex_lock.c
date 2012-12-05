@@ -71,7 +71,8 @@ __pthread_mutex_lock (mutex)
 
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
 
-again:
+  /* A switch would be likely faster */
+
   if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_NP, 1))
     {
       FORCE_ELISION (mutex, goto elision);
@@ -88,7 +89,6 @@ again:
       /* Don't record owner or users for elision case. */
       return LLL_MUTEX_LOCK_ELISION (mutex);
     }
-
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
       /* Recursive mutex.  */
@@ -112,11 +112,17 @@ again:
       assert (mutex->__data.__owner == 0);
       mutex->__data.__count = 1;
     } 
-  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1))
+  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP ||
+			     type == PTHREAD_MUTEX_ADAPTIVE_ELISION_NP, 1))
     {
       if (! __is_smp)
 	goto simple;
 
+      FORCE_ELISION (mutex,
+		     if (!lll_trylock_elision (mutex->__data.__lock, 
+				               mutex->__data.__elision))
+		         return 0;)
+    adaptive:
       if (LLL_MUTEX_TRYLOCK (mutex) != 0)
 	{
 	  int cnt = 0;
@@ -140,12 +146,10 @@ again:
 	}
       assert (mutex->__data.__owner == 0);
     }
-  else if (type & PTHREAD_MUTEX_ELISION_FLAGS_NP)
-    {
-      /* Cannot handle. Drop elision flags and try again */
-      type &= ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
-      goto again;
-    }
+  else if (type == PTHREAD_MUTEX_TIMED_ELISION_NP)
+    goto elision;
+  else if (type == PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP)
+    goto adaptive;
   else
     {
       assert (type == PTHREAD_MUTEX_ERRORCHECK_NP);

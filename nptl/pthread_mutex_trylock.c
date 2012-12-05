@@ -68,8 +68,8 @@ __pthread_mutex_trylock (mutex)
       break;
 
     case PTHREAD_MUTEX_TIMED_ELISION_NP:
-      if (lll_trylock_elision (mutex->__data.__lock, 
-                                    mutex->__data.__spins) != 0)
+      if (lll_trylock_elision (mutex->__data.__lock,
+			       mutex->__data.__elision) != 0)
         break;
       /* Don't record the ownership. */
       return 0;

@@ -24,7 +24,7 @@
 #define aconf __elision_aconf
 
 int 
-__lll_trylock_elision (int *futex, int *try_lock)
+__lll_trylock_elision (int *futex, short *try_lock)
 {
   /* Only try a transaction if it's worth it */
   if (*try_lock <= 0) 

@@ -429,7 +429,7 @@ LLL_STUB_UNWIND_INFO_END
 		       : "memory");					      \
      result; })
 
-extern int __lll_timedlock_elision (int *futex, int *try_lock, 
+extern int __lll_timedlock_elision (int *futex, short *try_lock, 
 					 const struct timespec *timeout, 
 					 int private) attribute_hidden;
 
@@ -588,13 +588,13 @@ extern int __lll_timedwait_tid (int *tid, const struct timespec *abstime)
       }									      \
     __result; })
 
-extern int __lll_lock_elision (int *futex, int *try_lock, int private)
+extern int __lll_lock_elision (int *futex, short *try_lock, int private)
   attribute_hidden;
 
 extern int __lll_unlock_elision(int *lock, int private) 
   attribute_hidden;
 
-extern int __lll_trylock_elision(int *lock, int *try_lock)
+extern int __lll_trylock_elision(int *lock, short *try_lock)
   attribute_hidden;
 
 #define lll_lock_elision(futex, try_lock, private) \

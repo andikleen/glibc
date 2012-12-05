@@ -43,7 +43,7 @@
    Requires a gcc with "asm goto" support (4.6+ or RedHat's 4.5). */
 
 int 
-__lll_lock_elision (int *futex, int *try_lock, EXTRAARG int private)
+__lll_lock_elision (int *futex, short *try_lock, EXTRAARG int private)
 {
   if (*try_lock <= 0) 
     {	
