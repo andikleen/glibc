@@ -78,7 +78,6 @@ again:
     simple:
       /* Normal mutex.  */
       LLL_MUTEX_LOCK (mutex);
-      if (mutex->__data.__owner != 0) { char buf[100]; sprintf(buf,"bad owner: type %x\n", (mutex->__data.__kind)); write(2,buf,strlen(buf)); }
       assert (mutex->__data.__owner == 0);
     }
   else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
