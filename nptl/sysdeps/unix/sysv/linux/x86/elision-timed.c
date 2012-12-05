@@ -1,7 +1,8 @@
-/* Turn elision lock into timedlock */
+#include <time.h>
+#include "elision-conf.h"
 #include "lowlevellock.h"
-#include "force-elision.h"
-#define EXTRAARG const struct timespec *timeout, 
-#define LLL_LOCK(f,p) lll_timedlock(f, timeout, p)
 #define __lll_lock_elision __lll_timedlock_elision
+#define EXTRAARG const struct timespec *t,
+#undef LLL_LOCK
+#define LLL_LOCK(a, b) lll_timedlock(a, t, b)
 #include "elision-lock.c"

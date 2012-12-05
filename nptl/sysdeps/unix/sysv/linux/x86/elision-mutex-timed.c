@@ -1,4 +1,4 @@
-/* elision-mutex-trylock.c: Elided IFUNC version of pthread_mutex_trylock.
+/* elision-timed.c: Elided IFUNC version of pthread_mutex_timedlock.
    Copyright (C) 2011, 2012 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -19,17 +19,20 @@
 #include "force-elision.h"
 #ifdef SHARED
 #define ENABLE_ELISION 1
-#define __pthread_mutex_trylock __pthread_mutex_trylock_rtm
+/* ??? why is the original not __? */
+#define pthread_mutex_timedlock __pthread_mutex_timedlock_rtm
 #else
-/* For static builds simply default to the rtm version. */
+/* For static builds simply default to the RTM version, but we must
+   check CPUID explicitely at runtime. For the shared build IFUNC
+   enforces this. */
 #define ENABLE_ELISION (__elision_available != 0)
 #endif
-#include "nptl/pthread_mutex_trylock.c"
-#undef __pthread_mutex_trylock
+#include "nptl/pthread_mutex_timedlock.c"
+#undef pthread_mutex_timedlock
 
 #ifdef SHARED
-libm_ifunc (__pthread_mutex_trylock, (elision_init (environ), 
-	      cpu_has_rtm () ? __pthread_mutex_trylock_rtm : __pthread_mutex_trylock_nortm));
-strong_alias(__pthread_mutex_trylock, pthread_mutex_trylock);
-/* hidden_def (__pthread_mutex_trylock); */
+/* Use own CPUID code because of ordering problems with the main query */
+libm_ifunc (pthread_mutex_timedlock, (elision_init (environ), 
+	   cpu_has_rtm () ? __pthread_mutex_timedlock_rtm : 
+	   __pthread_mutex_timedlock_nortm))
 #endif

@@ -30,8 +30,6 @@
 #undef __pthread_mutex_lock
 
 #ifdef SHARED
-extern int __pthread_mutex_lock_nortm (pthread_mutex_t *mutex);
-extern int __pthread_mutex_lock (pthread_mutex_t *mutex);
 /* Use own CPUID code because of ordering problems with the main query */
 libm_ifunc (__pthread_mutex_lock, (elision_init (environ), 
 	   cpu_has_rtm () ? __pthread_mutex_lock_rtm : __pthread_mutex_lock_nortm))

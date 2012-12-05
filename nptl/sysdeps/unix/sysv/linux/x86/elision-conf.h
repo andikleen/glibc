@@ -15,11 +15,12 @@
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>. */
-#ifndef _ADAPTIVE_CONF_H
-#define _ADAPTIVE_CONF_H 1
+#ifndef _ELISION_CONF_H
+#define _ELISION_CONF_H 1
 
 #include <pthread.h>
 #include <cpuid.h>
+#include <time.h>
 
 /* Should make sure there is no false sharing on this */
 
@@ -57,5 +58,15 @@ cpu_has_rtm (void)
     }
   return 0;
 }
+
+extern int __pthread_mutex_timedlock_nortm (pthread_mutex_t *mutex, const struct timespec *);
+extern int __pthread_mutex_timedlock_rtm (pthread_mutex_t *mutex, const struct timespec *);
+extern int __pthread_mutex_timedlock (pthread_mutex_t *mutex, const struct timespec *);
+extern int __pthread_mutex_lock_nortm (pthread_mutex_t *mutex);
+extern int __pthread_mutex_lock_rtm (pthread_mutex_t *mutex);
+extern int __pthread_mutex_lock (pthread_mutex_t *mutex);
+extern int __pthread_mutex_trylock_nortm (pthread_mutex_t *);
+extern int __pthread_mutex_trylock_rtm (pthread_mutex_t *);
+extern int __pthread_mutex_trylock (pthread_mutex_t *);
 
 #endif

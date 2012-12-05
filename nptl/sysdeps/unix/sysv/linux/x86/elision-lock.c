@@ -31,7 +31,7 @@
 #define EXTRAARG
 #endif
 #ifndef LLL_LOCK
-#define LLL_LOCK(a,b) lll_lock(a,b)
+#define LLL_LOCK(a,b) lll_lock(a,b), 0
 #endif
 
 #define aconf __elision_aconf
@@ -90,6 +90,5 @@ __lll_lock_elision (int *futex, int *try_lock, EXTRAARG int private)
     }
 
   /* Use a normal lock here */
-  LLL_LOCK ((*futex), private);
-  return 0;
+  return LLL_LOCK ((*futex), private);
 }
