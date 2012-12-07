@@ -100,25 +100,21 @@ mutex_test (void)
   lock = (pthread_mutex_t) PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP;
   ret += run_mutex (0, "timed initializer no elision");
 
-#ifdef ADAPTIVE_ELISION
   lock = (pthread_mutex_t) PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
   run_mutex (ITER, "adaptive initializer default");
   lock = (pthread_mutex_t) PTHREAD_ADAPTIVE_ELISION_MUTEX_INITIALIZER_NP;
   ret += run_mutex (ITER, "adaptive initializer elision");
   lock = (pthread_mutex_t) PTHREAD_ADAPTIVE_NO_ELISION_MUTEX_INITIALIZER_NP;
   ret += run_mutex (0, "adaptive initializer no elision");
-#endif
   
   ret += run_mutex_init (ITER, "timed init default", 0, 0);
   ret += run_mutex_init (ITER, "timed init elision", PTHREAD_MUTEX_TIMED_ELISION_NP, 1);
   ret += run_mutex_init (0, "timed init no elision", PTHREAD_MUTEX_TIMED_NO_ELISION_NP, 1);
 
-#ifdef ADAPTIVE_ELISION
   ret += run_mutex_init (ITER, "adaptive init default", 0, 0);
   ret += run_mutex_init (ITER, "adaptive init elision", PTHREAD_MUTEX_ADAPTIVE_ELISION_NP, 1);
   ret += run_mutex_init (0, "adaptive init no elision", PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP, 
 			  1);
-#endif
 
   return ret;
 }
