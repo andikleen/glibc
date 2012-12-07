@@ -78,8 +78,9 @@ __pthread_mutex_unlock_usercnt (mutex, decr)
 	return 0;
       goto normal;
     }
-  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1) ||
-	   __builtin_expect (type == PTHREAD_MUTEX_TIMED_NO_ELISION_NP, 1))
+  type &= ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
+  if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1) ||
+      __builtin_expect (type == PTHREAD_MUTEX_TIMED_NP, 1))
     goto normal;
   else
     {

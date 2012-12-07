@@ -68,6 +68,7 @@ __pthread_mutex_trylock (mutex)
       break;
 
     case PTHREAD_MUTEX_TIMED_ELISION_NP:
+    case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
       if (lll_trylock_elision (mutex->__data.__lock,
 			       mutex->__data.__elision) != 0)
         break;
@@ -76,6 +77,7 @@ __pthread_mutex_trylock (mutex)
 
     case PTHREAD_MUTEX_TIMED_NP:
     case PTHREAD_MUTEX_ADAPTIVE_NP:
+    case PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP:
       /*FALL THROUGH*/
     case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     case PTHREAD_MUTEX_ERRORCHECK_NP:

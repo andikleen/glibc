@@ -44,6 +44,7 @@ tf (void *arg)
 
   for (cnt = 0; cnt < ROUNDS; ++cnt)
     {
+	    printf("%d: round %d\n", nr, cnt);
       if (pthread_mutex_lock (&lock) != 0)
 	{
 	  printf ("thread %d: failed to get the lock\n", nr);

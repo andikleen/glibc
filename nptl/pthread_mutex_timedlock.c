@@ -98,7 +98,7 @@ pthread_mutex_timedlock (mutex, abstime)
       break;
 
     case PTHREAD_MUTEX_TIMED_ELISION_NP:
-    elision:
+    elision: __attribute__((unused))
       /* Don't record ownership */
       return lll_timedlock_elision (mutex->__data.__lock, 
 				    mutex->__data.__spins, 
@@ -107,7 +107,7 @@ pthread_mutex_timedlock (mutex, abstime)
 
 
     case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
-    adaptive_elision:
+    adaptive_elision: __attribute__((unused))
       if (!lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision)) 
         return 0;
       goto adaptive;
@@ -524,6 +524,4 @@ pthread_mutex_timedlock (mutex, abstime)
 
  out:
   return result;
-
-  goto elision; /* Avoid warning */
 }

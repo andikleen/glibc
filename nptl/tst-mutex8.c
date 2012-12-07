@@ -384,7 +384,7 @@ do_test (void)
       puts ("3rd mutexattr_init failed");
       return 1;
     }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ELISION_NP) != 0)
+  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_TIMED_ELISION_NP) != 0)
     {
       puts ("3rd mutexattr_settype failed");
       return 1;
@@ -414,6 +414,62 @@ do_test (void)
       puts ("4th mutexattr_destroy failed");
       return 1;
     }
+
+ if (pthread_mutexattr_init (&ma) != 0)
+    {
+      puts ("5th mutexattr_init failed");
+      return 1;
+    }
+  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_ELISION_NP) != 0)
+    {
+      puts ("5th mutexattr_settype failed");
+      return 1;
+    }
+  puts ("check elided adaptive");
+  res |= check_type ("elided-adaptive", &ma, 1);
+  if (pthread_mutexattr_destroy (&ma) != 0)
+    {
+      puts ("5th mutexattr_destroy failed");
+      return 1;
+    }
+
+ if (pthread_mutexattr_init (&ma) != 0)
+    {
+      puts ("6th mutexattr_init failed");
+      return 1;
+    }
+  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP) != 0)
+    {
+      puts ("6th mutexattr_settype failed");
+      return 1;
+    }
+  puts ("check not elided adaptive");
+  res |= check_type ("not-elided-adaptive", &ma, 0);
+  if (pthread_mutexattr_destroy (&ma) != 0)
+    {
+      puts ("6th mutexattr_destroy failed");
+      return 1;
+    }
+
+ if (pthread_mutexattr_init (&ma) != 0)
+    {
+      puts ("7th mutexattr_init failed");
+      return 1;
+    }
+  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_NP) != 0)
+    {
+      puts ("7th mutexattr_settype failed");
+      return 1;
+    }
+  puts ("check adaptive");
+  res |= check_type ("adaptive", &ma, elision_possible);
+  if (pthread_mutexattr_destroy (&ma) != 0)
+    {
+      puts ("7th mutexattr_destroy failed");
+      return 1;
+    }
+
+
   return res;
 }
 

@@ -115,6 +115,7 @@ typedef union
         short __espins;
 	short __elision;
 # define __spins d.__espins
+# define __elision d.__elision
 # define __PTHREAD_MUTEX_HAVE_ELISION   2
       } d;
       __pthread_slist_t __list;

@@ -54,6 +54,34 @@
 static int __pthread_mutex_lock_full (pthread_mutex_t *mutex)
      __attribute_noinline__;
 
+static inline __attribute__((always_inline)) void
+adaptive_lock (pthread_mutex_t *mutex)
+{
+  if (! __is_smp)
+    return;
+  if (LLL_MUTEX_TRYLOCK (mutex) != 0)
+    {
+      int cnt = 0;
+      int max_cnt = MIN (MAX_ADAPTIVE_COUNT, mutex->__data.__spins * 2 + 10);
+      do
+        {
+	  if (cnt++ >= max_cnt)
+	    {
+	      LLL_MUTEX_LOCK (mutex);
+	      break;
+	    }
+
+#ifdef BUSY_WAIT_NOP
+	  BUSY_WAIT_NOP;
+#endif
+	}
+      while (LLL_MUTEX_TRYLOCK (mutex) != 0);
+
+      mutex->__data.__spins += (cnt - mutex->__data.__spins) / 8;
+    }
+  assert (mutex->__data.__owner == 0);
+}
+
 
 int
 __pthread_mutex_lock (mutex)
@@ -85,7 +113,7 @@ __pthread_mutex_lock (mutex)
     {
       if (!ENABLE_ELISION)
         goto simple;
-    elision:
+    elision: __attribute__((unused))
       /* Don't record owner or users for elision case. */
       return LLL_MUTEX_LOCK_ELISION (mutex);
     }
@@ -112,44 +140,27 @@ __pthread_mutex_lock (mutex)
       assert (mutex->__data.__owner == 0);
       mutex->__data.__count = 1;
     } 
-  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP ||
-			     type == PTHREAD_MUTEX_ADAPTIVE_ELISION_NP, 1))
+  else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1))
     {
-      if (! __is_smp)
-	goto simple;
-
-      FORCE_ELISION (mutex,
-		     if (!lll_trylock_elision (mutex->__data.__lock, 
-				               mutex->__data.__elision))
-		         return 0;)
-    adaptive:
-      if (LLL_MUTEX_TRYLOCK (mutex) != 0)
-	{
-	  int cnt = 0;
-	  int max_cnt = MIN (MAX_ADAPTIVE_COUNT,
-			     mutex->__data.__spins * 2 + 10);
-	  do
-	    {
-	      if (cnt++ >= max_cnt)
-		{
-		  LLL_MUTEX_LOCK (mutex);
-		  break;
-		}
-
-#ifdef BUSY_WAIT_NOP
-	      BUSY_WAIT_NOP;
-#endif
-	    }
-	  while (LLL_MUTEX_TRYLOCK (mutex) != 0);
-
-	  mutex->__data.__spins += (cnt - mutex->__data.__spins) / 8;
-	}
-      assert (mutex->__data.__owner == 0);
+      FORCE_ELISION (mutex, goto elision_adaptive);
+  adaptive:
+      adaptive_lock (mutex);
     }
   else if (type == PTHREAD_MUTEX_TIMED_ELISION_NP)
     goto elision;
+  else if (type == PTHREAD_MUTEX_TIMED_NO_ELISION_NP)
+    goto simple;
   else if (type == PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP)
     goto adaptive;
+  else if (type == PTHREAD_MUTEX_ADAPTIVE_ELISION_NP)
+    {
+  elision_adaptive: __attribute__((unused))
+      if (!lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision))
+        return 0;
+      adaptive_lock (mutex);
+      /* No owner for elision */
+      return 0;
+    }
   else
     {
       assert (type == PTHREAD_MUTEX_ERRORCHECK_NP);
@@ -168,8 +179,6 @@ __pthread_mutex_lock (mutex)
   LIBC_PROBE (mutex_acquired, 1, mutex);
 
   return 0;
-
-  goto elision; /* Avoid warning */
 }
 
 static int
