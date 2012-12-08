@@ -31,18 +31,22 @@ __lll_trylock_elision (int *futex, short *try_lock)
     {	
       unsigned status;
  
-      XBEGIN (fail);
-      if (*futex == 0) 
-          return 0;
-      XEND ();
+      if ((status = _xbegin()) == _XBEGIN_STARTED)
+	{
+	  if (*futex == 0) 
+	    return 0;
 
-      /* Abort comes here */
-      XFAIL_STATUS (fail, status); 
+	  /* Lock was busy. Fall back to normal locking. 
+	     Could also _xend here but xabort with 0xff code
+	     is more visible in the profiler. */
+	  _xabort (0xff);
+	}
 
+      
       if (__tsx_abort_hook)
-          __tsx_abort_hook (status);
-
-      if (!(status & XABORT_RETRY)) 
+	__tsx_abort_hook (status);
+      
+      if (!(status & _XABORT_RETRY)) 
         {
           /* Internal abort. No chance for retry. For future
              locks don't try speculation for some time. */

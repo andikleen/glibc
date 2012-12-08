@@ -38,9 +38,7 @@
 
 /* Adaptive lock using transactions. 
    By default the lock region is run as a transaction, and when it 
-   aborts or the lock is busy the lock adapts itself.
-
-   Requires a gcc with "asm goto" support (4.6+ or RedHat's 4.5). */
+   aborts or the lock is busy the lock adapts itself. */
 
 int 
 __lll_lock_elision (int *futex, short *try_lock, EXTRAARG int private)
@@ -54,24 +52,26 @@ __lll_lock_elision (int *futex, short *try_lock, EXTRAARG int private)
 	   try_xbegin > 0; 
 	   try_xbegin--) 
 	{ 
-	  XBEGIN (fail);
-	  if (*futex == 0)
-	    return 0;
+	  if ((status = _xbegin()) == _XBEGIN_STARTED) 
+	    {
+	      if (*futex == 0)
+		return 0;
 	
-	  /* Lock was busy. Fall back to normal locking.  */
-	  XEND ();
+	      /* Lock was busy. Fall back to normal locking. 
+		 Could also _xend here but xabort with 0xff code
+		 is more visible in the profiler. */
+	      _xabort (0xff);
 
-	  if (*try_lock != aconf.retry_lock_busy)
-	    *try_lock = aconf.retry_lock_busy;
-	  break;
-		
-	  /* transaction failure comes here */
-	  XFAIL_STATUS (fail, status);
+	      if (*try_lock != aconf.retry_lock_busy)
+		*try_lock = aconf.retry_lock_busy;
+	      break;
+	    }
+	  
 
           if (__tsx_abort_hook)
-              __tsx_abort_hook(status);
-
-	  if (!(status & XABORT_RETRY))
+	    __tsx_abort_hook(status);
+	  
+	  if (!(status & _XABORT_RETRY))
 	    { 
 	      /* Internal abort. There is no chance for retry.
 		 Use the normal locking and next time use lock.

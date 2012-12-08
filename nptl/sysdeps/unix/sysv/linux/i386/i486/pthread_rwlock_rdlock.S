@@ -88,7 +88,7 @@ abort_rdlock:
 	
 1:
 
-	testl $XABORT_CONFLICT,%eax
+	testl $_XABORT_CONFLICT,%eax
 	jz    not_elided_rdlock
 	
 	/* For a reader that aborts due a conflict retry speculation

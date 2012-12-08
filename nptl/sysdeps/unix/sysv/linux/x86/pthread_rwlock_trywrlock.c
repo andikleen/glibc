@@ -31,19 +31,18 @@ __pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
 
   if (__rwlock_rtm_enabled != 0) 
     { 
-      XBEGIN (fail);
-      if (rwlock->__data.__writer == 0
-	  && rwlock->__data.__nr_readers == 0)
-	return 0;
-      XEND ();      
-      if (0) 
+      if ((status = _xbegin()) == _XBEGIN_STARTED)
 	{
-	  /* Aborts come here */
-	  XFAIL_STATUS (fail, status);
-	  if (__tsx_abort_hook)
-	    __tsx_abort_hook (status);
+	  if (rwlock->__data.__writer == 0
+	      && rwlock->__data.__nr_readers == 0)
+	    return 0;
+	  /* Lock was busy. Fall back to normal locking. 
+	     Could also _xend here but xabort with 0xff code
+	     is more visible in the profiler. */
+	  _xabort (0xff);
 	}
-      /* No retries here so far */
+      if (__tsx_abort_hook)
+	__tsx_abort_hook (status);
     } 
   
   return __full_pthread_rwlock_trywrlock (rwlock);
