@@ -454,6 +454,7 @@ tst-cancelx7-ARGS = $(tst-cancel7-ARGS)
 tst-umask1-ARGS = $(objpfx)tst-umask1.temp
 
 tst-abstime1-ENV = PTHREAD_MUTEX=none
+tst-mutex5-ENV = PTHREAD_MUTEX=none
 tst-mutex8-ENV = PTHREAD_MUTEX=none
 tst-mutex8f-ENV = PTHREAD_MUTEX=none
 tst-mutex8g-ENV = PTHREAD_MUTEX=elision
