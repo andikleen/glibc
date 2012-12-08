@@ -18,11 +18,37 @@
 
 #if defined(__i386__) || defined(__x86_64__)
 #include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
+
+int disabled;
 
 #include "sysdeps/unix/sysv/linux/x86/hle.h"
 
+int
+check (char *name, char *lock, int try, int txn)
+{
+  if (disabled) 
+    {
+      if (txn != 0)
+	{
+	  printf ("%s %s transaction run with PTHREAD_MUTEX=none\n", name, lock);
+	  return 1;
+	}
+    }
+  else
+    {
+      if (try == MAXTRY) 
+	{
+	  printf ("%s %s no transactions\n", name, lock);
+	  return 1;
+	}
+    }
+  return 0;
+}
+
 #define TESTLOCK(l, lock, unlock) 	\
-   do					\
+  do					\
     {					\
       txn = 0;				\
       for (i = 0; i < ITER; i++)	\
@@ -32,13 +58,10 @@
 	    txn++;			\
 	  unlock (&l); 			\
 	}				\
-    }					\
-  while (try++ < MAXTRY && txn != expected);\
-  if (try == MAXTRY)			\
-    {					\
-      printf ("%s %s transaction did not work\n", name, #lock); \
-      return 1;				\
-    }
+    }						\
+  while (try++ < MAXTRY && txn != expected);	\
+  if (check (name, #lock, try, txn))		\
+    return 1;
 
 #include "tst-elision-common.c"
 
@@ -50,6 +73,10 @@ do_test (void)
       printf ("elision test requires RTM capable CPU. not tested\n");
       return 0;
     }
+
+  char *s = getenv("PTHREAD_MUTEX");
+  if (s && !strcmp (s, "none"))
+    disabled = 1;
 
   if (mutex_test ())
     return 1;

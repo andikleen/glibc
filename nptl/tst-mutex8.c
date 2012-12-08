@@ -96,6 +96,8 @@ tf (void *arg)
 static int
 check_type (const char *mas, pthread_mutexattr_t *ma)
 {
+  int e __attribute__((unused));
+
   if (pthread_mutex_init (m, ma) != 0)
     {
       printf ("1st mutex_init failed for %s\n", mas);
@@ -120,8 +122,8 @@ check_type (const char *mas, pthread_mutexattr_t *ma)
       return 1;
     }
 
-  int e = pthread_mutex_destroy (m);
 #ifndef ELIDED
+  e = pthread_mutex_destroy (m);
   if (e == 0)
     {
       printf ("mutex_destroy of self-locked mutex succeeded for %s\n", mas);
@@ -147,8 +149,8 @@ check_type (const char *mas, pthread_mutexattr_t *ma)
       return 1;
     }
 
-  e = pthread_mutex_destroy (m);
 #ifndef ELIDED
+  e = pthread_mutex_destroy (m);
   if (e == 0)
     {
       printf ("mutex_destroy of self-trylocked mutex succeeded for %s\n", mas);
@@ -196,8 +198,8 @@ mutex_destroy of self-trylocked mutex did not return EBUSY %s\n",
       return 1;
     }
 
-  e = pthread_mutex_destroy (m);
 #ifndef ELIDED
+  e = pthread_mutex_destroy (m);
   if (e == 0)
     {
       printf ("mutex_destroy of condvar-used mutex succeeded for %s\n", mas);
@@ -268,8 +270,8 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
       return 1;
     }
 
-  e = pthread_mutex_destroy (m);
 #ifndef ELIDED
+  e = pthread_mutex_destroy (m);
   if (e == 0)
     {
       printf ("2nd mutex_destroy of condvar-used mutex succeeded for %s\n",
@@ -315,6 +317,7 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
 static int
 do_test (void)
 {
+  pthread_mutexattr_t ma;
   pthread_mutex_t mm;
   m = &mm;
 
@@ -331,7 +334,6 @@ do_test (void)
     }
 
 #ifdef TYPE
-  pthread_mutexattr_t ma;
   if (pthread_mutexattr_init (&ma) != 0)
     {
       puts ("0th mutexattr_init failed");
@@ -344,10 +346,9 @@ do_test (void)
     }
 #endif
 
-  puts ("check normal mutex");
+  puts ("check " NAME " mutex");
   int res = check_type (NAME, NULL);
 
-  pthread_mutexattr_t ma;
   if (pthread_mutexattr_init (&ma) != 0)
     {
       puts ("1st mutexattr_init failed");
