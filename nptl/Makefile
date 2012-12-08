@@ -264,7 +264,7 @@ tests = tst-typesizes \
 	tst-context1 \
 	tst-sched1 \
 	tst-backtrace1 \
-	tst-abstime \
+	tst-abstime tst-abstime1b tst-abstime1c \
 	tst-vfork1 tst-vfork2 tst-vfork1x tst-vfork2x \
 	tst-getpid1 tst-getpid2 tst-getpid3 \
 	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99) \
@@ -451,6 +451,8 @@ CFLAGS-tst-initializers2-gnu99.c = $(CFLAGS-tst-initializers1-<)
 tst-cancel7-ARGS = --command "exec $(host-built-program-cmd)"
 tst-cancelx7-ARGS = $(tst-cancel7-ARGS)
 tst-umask1-ARGS = $(objpfx)tst-umask1.temp
+
+tst-abstime1-ENV = PTHREAD_MUTEX=none
 
 $(objpfx)tst-atfork2: $(libdl) $(shared-thread-library)
 LDFLAGS-tst-atfork2 = -rdynamic

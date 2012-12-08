@@ -1,0 +1,2 @@
+#define MUTEX_TYPE PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP
+#include "tst-abstime1.c"
