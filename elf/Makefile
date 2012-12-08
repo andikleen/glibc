@@ -642,9 +642,8 @@ $(objpfx)circlemod2a.so: $(objpfx)circlemod3a.so
 $(objpfx)order: $(addprefix $(objpfx),dep4.so dep3.so dep2.so dep1.so)
 
 $(objpfx)order.out: $(objpfx)order
-	$(test-wrapper) \
-	$(elf-objpfx)$(rtld-installed-name) \
-	  --library-path $(rpath-link)$(patsubst %,:%,$(sysdep-library-path)) \
+	$(test-wrapper-env) \
+	LD_LIBRARY_PATH=$(objpfx) \
 	  $(objpfx)order > $@
 	(echo "0123456789" | cmp $@ -) > /dev/null
 
@@ -852,36 +851,36 @@ LDFLAGS-tst-execstack-prog = -Wl,-z,execstack
 endif
 
 $(objpfx)tst-array1.out: tst-array1.exp $(objpfx)tst-array1
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array1.exp > /dev/null
 
 $(objpfx)tst-array1-static.out: tst-array1.exp $(objpfx)tst-array1-static
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array1.exp > /dev/null
 
 $(objpfx)tst-array2: $(objpfx)tst-array2dep.so
 $(objpfx)tst-array2.out: tst-array2.exp $(objpfx)tst-array2
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array2.exp > /dev/null
 
 $(objpfx)tst-array3.out: tst-array1.exp $(objpfx)tst-array3
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array1.exp > /dev/null
 
 $(objpfx)tst-array4: $(libdl)
 $(objpfx)tst-array4.out: tst-array4.exp $(objpfx)tst-array4 \
 			 $(objpfx)tst-array2dep.so
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array4.exp > /dev/null
 
 $(objpfx)tst-array5: $(objpfx)tst-array5dep.so
 $(objpfx)tst-array5.out: tst-array5.exp $(objpfx)tst-array5
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array5.exp > /dev/null
 
 $(objpfx)tst-array5-static.out: tst-array5-static.exp \
 				$(objpfx)tst-array5-static
-	$(built-program-cmd) > $@
+	$(test-program-cmd) > $@
 	cmp $@ tst-array5-static.exp > /dev/null
 
 CFLAGS-tst-pie1.c += $(pie-ccflag)
@@ -1030,9 +1029,8 @@ $(objpfx)tst-global1.out: $(objpfx)testobj6.so $(objpfx)testobj2.so
 $(objpfx)order2: $(libdl)
 $(objpfx)order2.out: $(objpfx)order2 $(objpfx)order2mod1.so \
 		     $(objpfx)order2mod2.so
-	$(test-wrapper) \
-	$(elf-objpfx)$(rtld-installed-name) \
-	  --library-path $(rpath-link)$(patsubst %,:%,$(sysdep-library-path)) \
+	$(test-wrapper-env) \
+	LD_LIBRARY_PATH=$(objpfx) \
 	  $(objpfx)order2 > $@
 	(echo "12345" | cmp $@ -) > /dev/null
 $(objpfx)order2mod1.so: $(objpfx)order2mod4.so
@@ -1042,7 +1040,7 @@ order2mod2.so-no-z-defs = yes
 LDFLAGS-order2mod1.so = $(no-as-needed)
 LDFLAGS-order2mod2.so = $(no-as-needed)
 
-tst-stackguard1-ARGS = --command "$(host-built-program-cmd) --child"
+tst-stackguard1-ARGS = --command "$(host-test-program-cmd) --child"
 tst-stackguard1-static-ARGS = --command "$(objpfx)tst-stackguard1-static --child"
 
 $(objpfx)tst-leaks1: $(libdl)
@@ -1125,9 +1123,8 @@ $(objpfx)tst-unique3.out: $(objpfx)tst-unique3lib2.so
 $(objpfx)tst-unique4: $(objpfx)tst-unique4lib.so
 
 $(objpfx)tst-initorder.out: $(objpfx)tst-initorder
-	$(test-wrapper) \
-	$(elf-objpfx)${rtld-installed-name} \
-	  --library-path $(rpath-link)$(patsubst %,:%,$(sysdep-library-path)) \
+	$(test-wrapper-env) \
+	LD_LIBRARY_PATH=$(objpfx) \
 	  $< > $@
 	cmp $@ tst-initorder.exp > /dev/null
 
@@ -1147,9 +1144,8 @@ object-suffixes-left := a b c d
 include $(o-iterator)
 
 $(objpfx)tst-initorder2.out: $(objpfx)tst-initorder2
-	$(test-wrapper) \
-	$(elf-objpfx)${rtld-installed-name} \
-	  --library-path $(rpath-link)$(patsubst %,:%,$(sysdep-library-path)) \
+	$(test-wrapper-env) \
+	LD_LIBRARY_PATH=$(objpfx) \
 	  $< > $@
 	cmp $@ tst-initorder2.exp > /dev/null
 

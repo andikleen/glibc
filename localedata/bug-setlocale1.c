@@ -11,17 +11,9 @@ do_test (int argc, char *argv[])
 {
   if (argc > 1)
     {
-      char *newargv[5];
-      asprintf (&newargv[0], "%self/ld.so", argv[1]);
-      if (newargv[0] == NULL)
-	{
-	  puts ("asprintf failed");
-	  return 1;
-	}
-      newargv[1] = (char *) "--library-path";
-      newargv[2] = argv[1];
-      newargv[3] = argv[0];
-      newargv[4] = NULL;
+      char *newargv[2];
+      newargv[0] = argv[0];
+      newargv[1] = NULL;
 
       char *env[3];
       env[0] = (char *) "LC_CTYPE=de_DE.UTF-8";

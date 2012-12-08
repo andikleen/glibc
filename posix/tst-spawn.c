@@ -171,10 +171,10 @@ do_test (int argc, char *argv[])
   char *spargv[12];
 
   /* We must have
-     - four parameters left of called initially
-       + path for ld.so
-       + "--library-path"
-       + the library path
+     - one or four parameters left of called initially
+       + path for ld.so		optional
+       + "--library-path"	optional
+       + the library path	optional
        + the application name
      - five parameters left if called through re-execution
        + file descriptor number which is supposed to be closed
@@ -183,7 +183,7 @@ do_test (int argc, char *argv[])
        + thhe duped second descriptor
        + the name of the closed descriptor
   */
-  if (argc != (restart ? 6 : 5))
+  if (argc != (restart ? 6 : 2) && argc != (restart ? 6 : 5))
     error (EXIT_FAILURE, 0, "wrong number of arguments (%d)", argc);
 
   if (restart)
@@ -235,18 +235,33 @@ do_test (int argc, char *argv[])
    snprintf (fd3name, sizeof fd3name, "%d", fd3);
    snprintf (fd4name, sizeof fd4name, "%d", fd4);
 
-   spargv[0] = argv[1];
-   spargv[1] = argv[2];
-   spargv[2] = argv[3];
-   spargv[3] = argv[4];
-   spargv[4] = (char *) "--direct";
-   spargv[5] = (char *) "--restart";
-   spargv[6] = fd1name;
-   spargv[7] = fd2name;
-   spargv[8] = fd3name;
-   spargv[9] = fd4name;
-   spargv[10] = name1;
-   spargv[11] = NULL;
+   if (argc == (restart ? 6 : 5))
+     {
+       spargv[0] = argv[1];
+       spargv[1] = argv[2];
+       spargv[2] = argv[3];
+       spargv[3] = argv[4];
+       spargv[4] = (char *) "--direct";
+       spargv[5] = (char *) "--restart";
+       spargv[6] = fd1name;
+       spargv[7] = fd2name;
+       spargv[8] = fd3name;
+       spargv[9] = fd4name;
+       spargv[10] = name1;
+       spargv[11] = NULL;
+     }
+   else
+     {
+       spargv[0] = argv[1];
+       spargv[1] = (char *) "--direct";
+       spargv[2] = (char *) "--restart";
+       spargv[3] = fd1name;
+       spargv[4] = fd2name;
+       spargv[5] = fd3name;
+       spargv[6] = fd4name;
+       spargv[7] = name1;
+       spargv[8] = NULL;
+     }
 
    if (posix_spawn (&pid, argv[1], &actions, NULL, spargv, environ) != 0)
      error (EXIT_FAILURE, errno, "posix_spawn");
