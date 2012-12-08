@@ -25,8 +25,6 @@ pthread_mutex_t mtx_normal = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mtx_recursive = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
 pthread_mutex_t mtx_errorchk = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
 pthread_mutex_t mtx_adaptive = PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
-pthread_mutex_t mtx_timed_elision = PTHREAD_TIMED_ELISION_MUTEX_INITIALIZER_NP;
-pthread_mutex_t mtx_timed_no_elision = PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP;
 pthread_rwlock_t rwl_normal = PTHREAD_RWLOCK_INITIALIZER;
 pthread_rwlock_t rwl_writer
   = PTHREAD_RWLOCK_WRITER_NONRECURSIVE_INITIALIZER_NP;
@@ -55,9 +53,5 @@ main (void)
   for (i = 0; i < sizeof (rwl_normal); i++)
     if (((char *) &rwl_normal)[i] != '\0')
       return 7;
-  if (mtx_timed_elision.__data.__kind != PTHREAD_MUTEX_TIMED_ELISION_NP)
-    return 8;
-  if (mtx_timed_no_elision.__data.__kind != PTHREAD_MUTEX_TIMED_NO_ELISION_NP)
-    return 9;
   return 0;
 }

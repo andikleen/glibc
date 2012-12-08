@@ -204,7 +204,8 @@ tests = tst-typesizes \
 	tst-attr1 tst-attr2 tst-attr3 \
 	tst-mutex1 tst-mutex2 tst-mutex3 tst-mutex4 tst-mutex5 tst-mutex6 \
 	tst-mutex7 tst-mutex8 tst-mutex9 tst-mutex5a tst-mutex7a \
-	tst-mutex5b tst-mutex5c tst-mutex7b tst-mutex7c \
+	tst-mutex5b tst-mutex5c tst-mutex5d tst-mutex5e \
+	tst-mutex7b tst-mutex7c tst-mutex7d txt-mutex7e \
 	tst-mutexpi1 tst-mutexpi2 tst-mutexpi3 tst-mutexpi4 tst-mutexpi5 \
 	tst-mutexpi5a tst-mutexpi6 tst-mutexpi7 tst-mutexpi7a tst-mutexpi8 \
 	tst-mutexpi9 \
@@ -267,6 +268,7 @@ tests = tst-typesizes \
 	tst-vfork1 tst-vfork2 tst-vfork1x tst-vfork2x \
 	tst-getpid1 tst-getpid2 tst-getpid3 \
 	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99) \
+	tst-initializers2 $(patsubst %,tst-initializers2-%,c89 gnu89 c99 gnu99) \
 	tst-elision1 tst-elision2
 xtests = tst-setuid1 tst-setuid1-static tst-mutexpp1 tst-mutexpp6 tst-mutexpp10
 test-srcs = tst-oddstacklimit
@@ -438,6 +440,13 @@ CFLAGS-tst-initializers1-c89.c = $(CFLAGS-tst-initializers1-<)
 CFLAGS-tst-initializers1-c99.c = $(CFLAGS-tst-initializers1-<)
 CFLAGS-tst-initializers1-gnu89.c = $(CFLAGS-tst-initializers1-<)
 CFLAGS-tst-initializers1-gnu99.c = $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers2.c = -W -Wall -Werror
+CFLAGS-tst-initializers2-< = $(CFLAGS-tst-initializers1.c) \
+			     $(patsubst tst-initializers1-%.c,-std=%,$<)
+CFLAGS-tst-initializers2-c89.c = $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers2-c99.c = $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers2-gnu89.c = $(CFLAGS-tst-initializers1-<)
+CFLAGS-tst-initializers2-gnu99.c = $(CFLAGS-tst-initializers1-<)
 
 tst-cancel7-ARGS = --command "exec $(host-built-program-cmd)"
 tst-cancelx7-ARGS = $(tst-cancel7-ARGS)
