@@ -91,10 +91,8 @@ tf (void *arg)
 
 
 static int
-check_type (const char *mas, pthread_mutexattr_t *ma, int elided)
+check_type (const char *mas, pthread_mutexattr_t *ma)
 {
-  int e;
-
   if (pthread_mutex_init (m, ma) != 0)
     {
       printf ("1st mutex_init failed for %s\n", mas);
@@ -119,20 +117,17 @@ check_type (const char *mas, pthread_mutexattr_t *ma, int elided)
       return 1;
     }
 
-  if (!elided)
+  int e = pthread_mutex_destroy (m);
+  if (e == 0)
     {
-      e = pthread_mutex_destroy (m);
-      if (e == 0)
-        {
-          printf ("mutex_destroy of self-locked mutex succeeded for %s\n", mas);
-          return 1;
-        }
-      if (e != EBUSY)
-        {
-          printf ("mutex_destroy of self-locked mutex did not return EBUSY %s\n",
-	          mas);
-          return 1;
-        }
+      printf ("mutex_destroy of self-locked mutex succeeded for %s\n", mas);
+      return 1;
+    }
+  if (e != EBUSY)
+    {
+      printf ("mutex_destroy of self-locked mutex did not return EBUSY %s\n",
+	      mas);
+      return 1;
     }
 
   if (pthread_mutex_unlock (m) != 0)
@@ -147,21 +142,18 @@ check_type (const char *mas, pthread_mutexattr_t *ma, int elided)
       return 1;
     }
 
-  if (!elided) 
+  e = pthread_mutex_destroy (m);
+  if (e == 0)
     {
-      e = pthread_mutex_destroy (m);
-      if (e == 0)
-        {
-          printf ("mutex_destroy of self-trylocked mutex succeeded for %s\n", mas);
-          return 1;
-        }
-      if (e != EBUSY)
-        {
-          printf ("\
+      printf ("mutex_destroy of self-trylocked mutex succeeded for %s\n", mas);
+      return 1;
+    }
+  if (e != EBUSY)
+    {
+      printf ("\
 mutex_destroy of self-trylocked mutex did not return EBUSY %s\n",
 	      mas);
-          return 1;
-        }
+      return 1;
     }
 
   if (pthread_mutex_unlock (m) != 0)
@@ -197,20 +189,17 @@ mutex_destroy of self-trylocked mutex did not return EBUSY %s\n",
       return 1;
     }
 
-  if (!elided)
+  e = pthread_mutex_destroy (m);
+  if (e == 0)
     {
-      e = pthread_mutex_destroy (m);
-      if (e == 0)
-        {
-          printf ("mutex_destroy of condvar-used mutex succeeded for %s\n", mas);
-          return 1;
-        }
-      if (e != EBUSY)
-        {
-          printf ("\
+      printf ("mutex_destroy of condvar-used mutex succeeded for %s\n", mas);
+      return 1;
+    }
+  if (e != EBUSY)
+    {
+      printf ("\
 mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
-          return 1;
-        }
+      return 1;
     }
 
   done = true;
@@ -270,22 +259,19 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
       return 1;
     }
 
-  if (!elided)
+  e = pthread_mutex_destroy (m);
+  if (e == 0)
     {
-      e = pthread_mutex_destroy (m);
-      if (e == 0)
-        {
-          printf ("2nd mutex_destroy of condvar-used mutex succeeded for %s\n",
-	          mas);
-          return 1;
-        }
-      if (e != EBUSY)
-        {
-          printf ("\
+      printf ("2nd mutex_destroy of condvar-used mutex succeeded for %s\n",
+	      mas);
+      return 1;
+    }
+  if (e != EBUSY)
+    {
+      printf ("\
 2nd mutex_destroy of condvar-used mutex did not return EBUSY for %s\n",
 	      mas);
-          return 1;
-        }
+      return 1;
     }
 
   if (pthread_cancel (th) != 0)
@@ -318,14 +304,8 @@ mutex_destroy of condvar-used mutex did not return EBUSY for %s\n", mas);
 static int
 do_test (void)
 {
-  int elision_possible = 1;
   pthread_mutex_t mm;
   m = &mm;
-
-  char *s;
-  s = getenv ("PTHREAD_MUTEX");
-  if (s && !strcmp(s, "none"))
-    elision_possible = 0;
 
   if (pthread_barrier_init (&b, NULL, 2) != 0)
     {
@@ -340,7 +320,7 @@ do_test (void)
     }
 
   puts ("check normal mutex");
-  int res = check_type ("normal", NULL, elision_possible);
+  int res = check_type ("normal", NULL);
 
   pthread_mutexattr_t ma;
   if (pthread_mutexattr_init (&ma) != 0)
@@ -354,7 +334,7 @@ do_test (void)
       return 1;
     }
   puts ("check recursive mutex");
-  res |= check_type ("recursive", &ma, 0);
+  res |= check_type ("recursive", &ma);
   if (pthread_mutexattr_destroy (&ma) != 0)
     {
       puts ("1st mutexattr_destroy failed");
@@ -372,103 +352,12 @@ do_test (void)
       return 1;
     }
   puts ("check error-checking mutex");
-  res |= check_type ("error-checking", &ma, 0);
+  res |= check_type ("error-checking", &ma);
   if (pthread_mutexattr_destroy (&ma) != 0)
     {
       puts ("2nd mutexattr_destroy failed");
       return 1;
     }
-
- if (pthread_mutexattr_init (&ma) != 0)
-    {
-      puts ("3rd mutexattr_init failed");
-      return 1;
-    }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_TIMED_ELISION_NP) != 0)
-    {
-      puts ("3rd mutexattr_settype failed");
-      return 1;
-    }
-  puts ("check elided timed mutex");
-  res |= check_type ("elided-timed", &ma, 1);
-  if (pthread_mutexattr_destroy (&ma) != 0)
-    {
-      puts ("3rd mutexattr_destroy failed");
-      return 1;
-    }
-
- if (pthread_mutexattr_init (&ma) != 0)
-    {
-      puts ("4th mutexattr_init failed");
-      return 1;
-    }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_TIMED_NO_ELISION_NP) != 0)
-    {
-      puts ("4th mutexattr_settype failed");
-      return 1;
-    }
-  puts ("check not elided timed mutex");
-  res |= check_type ("not-elided-timed", &ma, 0);
-  if (pthread_mutexattr_destroy (&ma) != 0)
-    {
-      puts ("4th mutexattr_destroy failed");
-      return 1;
-    }
-
- if (pthread_mutexattr_init (&ma) != 0)
-    {
-      puts ("5th mutexattr_init failed");
-      return 1;
-    }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_ELISION_NP) != 0)
-    {
-      puts ("5th mutexattr_settype failed");
-      return 1;
-    }
-  puts ("check elided adaptive");
-  res |= check_type ("elided-adaptive", &ma, 1);
-  if (pthread_mutexattr_destroy (&ma) != 0)
-    {
-      puts ("5th mutexattr_destroy failed");
-      return 1;
-    }
-
- if (pthread_mutexattr_init (&ma) != 0)
-    {
-      puts ("6th mutexattr_init failed");
-      return 1;
-    }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP) != 0)
-    {
-      puts ("6th mutexattr_settype failed");
-      return 1;
-    }
-  puts ("check not elided adaptive");
-  res |= check_type ("not-elided-adaptive", &ma, 0);
-  if (pthread_mutexattr_destroy (&ma) != 0)
-    {
-      puts ("6th mutexattr_destroy failed");
-      return 1;
-    }
-
- if (pthread_mutexattr_init (&ma) != 0)
-    {
-      puts ("7th mutexattr_init failed");
-      return 1;
-    }
-  if (pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_NP) != 0)
-    {
-      puts ("7th mutexattr_settype failed");
-      return 1;
-    }
-  puts ("check adaptive");
-  res |= check_type ("adaptive", &ma, elision_possible);
-  if (pthread_mutexattr_destroy (&ma) != 0)
-    {
-      puts ("7th mutexattr_destroy failed");
-      return 1;
-    }
-
 
   return res;
 }
