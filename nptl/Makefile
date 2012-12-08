@@ -204,6 +204,7 @@ tests = tst-typesizes \
 	tst-attr1 tst-attr2 tst-attr3 \
 	tst-mutex1 tst-mutex2 tst-mutex3 tst-mutex4 tst-mutex5 tst-mutex6 \
 	tst-mutex7 tst-mutex8 tst-mutex9 tst-mutex5a tst-mutex7a \
+	tst-mutex8b tst-mutex8c tst-mutex8d tst-mutex8e tst-mutex8f \
 	tst-mutex5b tst-mutex5c tst-mutex5d tst-mutex5e \
 	tst-mutex7b tst-mutex7c tst-mutex7d txt-mutex7e \
 	tst-mutexpi1 tst-mutexpi2 tst-mutexpi3 tst-mutexpi4 tst-mutexpi5 \
@@ -453,6 +454,9 @@ tst-cancelx7-ARGS = $(tst-cancel7-ARGS)
 tst-umask1-ARGS = $(objpfx)tst-umask1.temp
 
 tst-abstime1-ENV = PTHREAD_MUTEX=none
+tst-mutex8-ENV = PTHREAD_MUTEX=none
+tst-mutex8f-ENV = PTHREAD_MUTEX=none
+tst-mutex8g-ENV = PTHREAD_MUTEX=elision
 
 $(objpfx)tst-atfork2: $(libdl) $(shared-thread-library)
 LDFLAGS-tst-atfork2 = -rdynamic
