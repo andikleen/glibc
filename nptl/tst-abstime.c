@@ -35,10 +35,6 @@ th (void *arg)
   int r;
   struct timespec t = { -2, 0 };
 
-  /* Timed locks will succeed with elision */
-  if (m1.__data.__kind & PTHREAD_MUTEX_ELISION_NP)
-    return NULL;
-
   r = pthread_mutex_timedlock (&m1, &t);
   if (r != ETIMEDOUT)
     {
@@ -61,7 +57,7 @@ th (void *arg)
 }
 
 static int
-do_test2 (void)
+do_test (void)
 {
   int res = 0;
   int r;
@@ -93,38 +89,9 @@ do_test2 (void)
     }
   void *thres;
   pthread_join (pth, &thres);
- 
-  pthread_mutex_unlock (&m1);
-  pthread_mutex_unlock (&m2);
-  pthread_rwlock_unlock (&rw1);
-  pthread_rwlock_unlock (&rw2);
-
   return res | (thres != NULL);
 }
 
-static int
-do_test (void)
-{
-  int res;
-
-  res = do_test2 (); 
-
-  pthread_mutexattr_t ma;
-  pthread_mutexattr_init (&ma);
-  pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_TIMED_NO_ELISION_NP);
-  pthread_mutex_init (&m1, &ma);
-  res |= do_test2 ();
-
-  pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_NP);
-  pthread_mutex_init (&m1, &ma);
-  res |= do_test2 ();
-
-  pthread_mutexattr_settype (&ma, PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP);
-  pthread_mutex_init (&m1, &ma);
-  res |= do_test2 ();
-
-  return res;
-}
 
 #define TEST_FUNCTION do_test ()
 #include "../test-skeleton.c"
