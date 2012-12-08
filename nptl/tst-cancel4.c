@@ -2165,8 +2165,6 @@ do_test (void)
       if (tests[cnt].only_early)
 	continue;
 
-      puts(tests[cnt].name);
-
       if (pthread_barrier_init (&b2, NULL, tests[cnt].nb) != 0)
 	{
 	  puts ("b2 init failed");
