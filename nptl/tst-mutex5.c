@@ -193,7 +193,6 @@ finish:
       return 1;
     }
 
-
   if (pthread_mutex_destroy (&m) != 0)
     {
       puts ("mutex_destroy failed");
