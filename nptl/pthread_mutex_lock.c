@@ -111,11 +111,13 @@ __pthread_mutex_lock (mutex)
     }
   else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
     {
+  elision: __attribute__((unused))
       if (!ENABLE_ELISION)
         goto simple;
-    elision: __attribute__((unused))
       /* Don't record owner or users for elision case. */
-      return LLL_MUTEX_LOCK_ELISION (mutex);
+      int ret = LLL_MUTEX_LOCK_ELISION (mutex);
+      assert (mutex->__data.__owner == 0);
+      return ret;
     }
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
@@ -155,7 +157,8 @@ __pthread_mutex_lock (mutex)
   else if (type == PTHREAD_MUTEX_ADAPTIVE_ELISION_NP)
     {
   elision_adaptive: __attribute__((unused))
-      if (!lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision))
+      if (ENABLE_ELISION
+	  && !lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision))
         return 0;
       adaptive_lock (mutex);
       /* No owner for elision */
