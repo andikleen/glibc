@@ -344,10 +344,13 @@ do_test (void)
       puts ("0th mutexattr_settype failed");
       return 1;
     }
-#endif
 
   puts ("check " NAME " mutex");
+  int res = check_type (NAME, &ma);
+#else
+  puts ("check " NAME " mutex");
   int res = check_type (NAME, NULL);
+#endif
 
   if (pthread_mutexattr_init (&ma) != 0)
     {

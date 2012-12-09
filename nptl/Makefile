@@ -206,7 +206,7 @@ tests = tst-typesizes \
 	tst-mutex7 tst-mutex8 tst-mutex9 tst-mutex5a tst-mutex7a \
 	tst-mutex8b tst-mutex8c tst-mutex8d tst-mutex8e tst-mutex8f \
 	tst-mutex5b tst-mutex5c tst-mutex5d tst-mutex5e \
-	tst-mutex7b tst-mutex7c tst-mutex7d txt-mutex7e \
+	tst-mutex7b tst-mutex7c tst-mutex7d tst-mutex7e \
 	tst-mutexpi1 tst-mutexpi2 tst-mutexpi3 tst-mutexpi4 tst-mutexpi5 \
 	tst-mutexpi5a tst-mutexpi6 tst-mutexpi7 tst-mutexpi7a tst-mutexpi8 \
 	tst-mutexpi9 \
@@ -456,6 +456,7 @@ tst-umask1-ARGS = $(objpfx)tst-umask1.temp
 tst-abstime1-ENV = PTHREAD_MUTEX=none
 tst-mutex5-ENV = PTHREAD_MUTEX=none
 tst-mutex8-ENV = PTHREAD_MUTEX=none
+tst-mutexpi8-ENV = PTHREAD_MUTEX=none
 tst-mutex8f-ENV = PTHREAD_MUTEX=none
 tst-mutex8g-ENV = PTHREAD_MUTEX=elision
 tst-elision1b-ENV = PTHREAD_MUTEX=none PTHREAD_RWLOCK=none
