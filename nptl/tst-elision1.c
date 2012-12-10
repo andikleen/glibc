@@ -23,17 +23,29 @@
 #include <stdio.h>
 
 int disabled;
+int forced;
 
 #include "sysdeps/unix/sysv/linux/x86/hle.h"
 
 int
-check (const char *name, const char *lock, int try, int txn, int max)
+check (const char *name, const char *lock, int try, int txn, int max,
+       int override)
 {
-  if (disabled) 
+  int should_run = 1;
+
+  if (override == 0)
+    should_run = disabled == 0;
+  else if (override == 1)
+    should_run = 1;
+  else if (override == 2)
+    should_run = 0;
+
+  /* forced noop right now, so not tested. But test if the defaults change */
+  if (!should_run)
     {
       if (txn != 0)
 	{
-	  printf ("%s %s transaction run with PTHREAD_MUTEX=none\n", name, lock);
+	  printf ("%s %s transaction run unexpected\n", name, lock);
 	  return 1;
 	}
     }
@@ -41,14 +53,14 @@ check (const char *name, const char *lock, int try, int txn, int max)
     {
       if (try == max) 
 	{
-	  printf ("%s %s no transactions\n", name, lock);
+	  printf ("%s %s no transactions when expected\n", name, lock);
 	  return 1;
 	}
     }
   return 0;
 }
 
-#define TESTLOCK(l, lock, unlock) 	\
+#define TESTLOCK(l, lock, unlock, force)\
   do					\
     {					\
       txn = 0;				\
@@ -61,7 +73,7 @@ check (const char *name, const char *lock, int try, int txn, int max)
 	}				\
     }						\
   while (try++ < MAXTRY && txn != expected);	\
-  if (check (name, #lock, try, txn, MAXTRY))	\
+  if (check (name, #lock, try, txn, MAXTRY, force))	\
     return 1;
 
 #include "tst-elision-common.c"
@@ -75,9 +87,20 @@ do_test (void)
       return 0;
     }
 
-  char *s = getenv("PTHREAD_MUTEX");
-  if (s && !strcmp (s, "none"))
-    disabled = 1;
+  char *s = getenv ("PTHREAD_MUTEX");
+  if (s)
+    {
+      char *o = getenv ("PTHREAD_RWLOCK");
+      if (!o || strcmp (o, s))
+        {
+          puts("PTHREAD_MUTEX and PTHREAD_RWLOCK must match for test!\n");
+          return 1;
+	}
+      if (!strcmp (s, "none"))
+        disabled = 1;
+      if (!strcmp (s, "elision"))
+	forced = 1;
+    }
 
   if (mutex_test ())
     return 1;

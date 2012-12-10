@@ -31,19 +31,19 @@ void do_abort(unsigned code)
   printf ("abort %x\n", code);
 }
 
-#define TESTLOCK(l, lock, unlock) 	\
+#define TESTLOCK(l, lock, unlock, force) 	\
    do					\
     {					\
       abort_count = 0;			\
       for (i = 0; i < ITER; i++)	\
 	{				\
 	  lock (&l);			\
-	  XABORT(1);			\
+	  _xabort(1);			\
 	  unlock (&l); 			\
 	}				\
     }					\
   while (try++ < MAXTRY && abort_count != ITER);\
-  if (try == MAXTRY)			\
+  if (try == MAXTRY && force != 2)	\
     {					\
       printf ("%s %s abort hook did not work\n", name, #lock); \
       return 1;				\
