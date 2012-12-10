@@ -1,2 +1,2 @@
 #define MUTEX_TYPE PTHREAD_ADAPTIVE_NO_ELISION_MUTEX_INITIALIZER_NP
-#include "tst-abstime1.c"
+#include "tst-abstime.c"
