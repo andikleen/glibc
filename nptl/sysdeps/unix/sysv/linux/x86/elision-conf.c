@@ -79,6 +79,13 @@ simple_strtou (const char *s, char **end)
   return num;
 }
 
+static void
+complain (const char *msg, int len)
+{
+  INTERNAL_SYSCALL_DECL (err);
+  INTERNAL_SYSCALL (write, err, 3, 2, (char *)msg, len);
+}
+
 static void 
 elision_aconf_setup(const char *s)
 {
@@ -111,7 +118,7 @@ elision_aconf_setup(const char *s)
   return;
       
  error:
-  __write (2, PAIR("pthreads: invalid PTHREAD_MUTEX syntax\n"));
+  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax\n"));
 }
 
 int __rwlock_rtm_enabled attribute_hidden;
@@ -168,7 +175,7 @@ elision_mutex_init (const char *s)
   else if (!simple_strncmp (s, "none", 4) && s[4] == 0)
     __pthread_force_elision = 0;
   else 
-    __write (2, PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));  
+    complain (PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));  
 }
 
 static void
@@ -189,7 +196,7 @@ elision_rwlock_init (const char *s)
 
           n = simple_strtou (s + 8, &end);
 	  if (end == s + 8)
-    	    __write (2, PAIR("pthreads: Bad retry number for PTHREAD_RWLOCK\n"));
+    	    complain (PAIR("pthreads: Bad retry number for PTHREAD_RWLOCK\n"));
           else
 	    __rwlock_rtm_read_retries = n;
 	}
@@ -197,7 +204,7 @@ elision_rwlock_init (const char *s)
   else if (!simple_strncmp(s, "none", 4) && s[4] == 0)
     __rwlock_rtm_enabled = 0;
   else
-    __write (2, PAIR("pthreads: Unknown setting for PTHREAD_RWLOCK\n"));
+    complain (PAIR("pthreads: Unknown setting for PTHREAD_RWLOCK\n"));
 }
 
 void attribute_hidden
