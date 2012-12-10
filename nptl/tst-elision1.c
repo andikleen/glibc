@@ -20,13 +20,14 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 int disabled;
 
 #include "sysdeps/unix/sysv/linux/x86/hle.h"
 
 int
-check (char *name, char *lock, int try, int txn)
+check (const char *name, const char *lock, int try, int txn, int max)
 {
   if (disabled) 
     {
@@ -38,7 +39,7 @@ check (char *name, char *lock, int try, int txn)
     }
   else
     {
-      if (try == MAXTRY) 
+      if (try == max) 
 	{
 	  printf ("%s %s no transactions\n", name, lock);
 	  return 1;
@@ -54,13 +55,13 @@ check (char *name, char *lock, int try, int txn)
       for (i = 0; i < ITER; i++)	\
 	{				\
 	  lock (&l);			\
-	  if (XTEST ())			\
+	  if (_xtest ())		\
 	    txn++;			\
 	  unlock (&l); 			\
 	}				\
     }						\
   while (try++ < MAXTRY && txn != expected);	\
-  if (check (name, #lock, try, txn))		\
+  if (check (name, #lock, try, txn, MAXTRY))	\
     return 1;
 
 #include "tst-elision-common.c"
