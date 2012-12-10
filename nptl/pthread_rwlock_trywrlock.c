@@ -22,8 +22,7 @@
 
 
 int
-__pthread_rwlock_trywrlock (rwlock)
-     pthread_rwlock_t *rwlock;
+__pthread_rwlock_trywrlock (pthread_rwlock_t *rwlock)
 {
   int result = EBUSY;
 
