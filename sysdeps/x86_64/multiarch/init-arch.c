@@ -176,8 +176,6 @@ __init_cpu_features (void)
 const struct cpu_features *
 __get_cpu_features (void)
 {
-  if (__cpu_features.kind == arch_kind_unknown)
-    __init_cpu_features ();
-
+  INIT_ARCH ();
   return &__cpu_features;
 }

@@ -109,9 +109,10 @@ extern void __init_cpu_features (void) attribute_hidden;
       __init_cpu_features ();				\
   while (0)
 
-/* Used from outside libc.so to get access to the CPU features structure.  */
+/* Implicitly call __init_cpu_features before accessing the CPU features
+   structure.  */
 extern const struct cpu_features *__get_cpu_features (void)
-     __attribute__ ((const));
+     __attribute__ ((const)) attribute_hidden;
 
 # ifndef NOT_IN_libc
 #  define __get_cpu_features()	(&__cpu_features)

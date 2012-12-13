@@ -1,0 +1,31 @@
+2012-12-13  H.J. Lu  <hongjiu.lu@intel.com>
+
+	[BZ #14955]
+	* sysdeps/i386/i686/fpu/multiarch/Makefile (libm-sysdep_routines):
+	Add init-arch.
+	* sysdeps/x86_64/fpu/multiarch/Makefile (libm-sysdep_routines):
+	Likewise.
+	* sysdeps/i386/i686/multiarch/Makefile (CPPFLAGS-init-arch.c): New
+	macro.  Defined to -Din_init_arch_c.
+	($(objpfx)test-multiarch): New dependency.
+	* sysdeps/wordsize-32/symbol-hacks.h: Skip if in_init_arch_c is
+	defined.
+	* sysdeps/x86_64/multiarch/init-arch.c (__get_cpu_features): Use
+	INIT_ARCH.
+	* sysdeps/x86_64/multiarch/init-arch.h (__get_cpu_features): Mark
+	it hidden.
+	* sysdeps/x86_64/multiarch/Makefile ($(objpfx)test-multiarch): New
+	dependency.
+	* sysdeps/i386/i686/multiarch/Versions: Removed.
+	* sysdeps/x86_64/multiarch/Versions: Likewise.
+
+2012-12-13  H.J. Lu  <hongjiu.lu@intel.com>
+
+	[BZ #14955]
+	* sysdeps/x86/Makefile (tests): Add tst-ifunc-cpu1-main.
+	(modules-names): Add tst-ifunc-cpu1-mod.
+	(tst-ifunc-cpu1-mod.so-no-z-defs): New macro.
+	($(objpfx)tst-ifunc-cpu1-mod.so): New dependency.
+	($(objpfx)tst-ifunc-cpu1-main): Likewise.
+	* sysdeps/x86/tst-ifunc-cpu1-main.c: New file.
+	* sysdeps/x86/tst-ifunc-cpu1-mod.c: Likewise.

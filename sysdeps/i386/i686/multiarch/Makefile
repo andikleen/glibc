@@ -1,7 +1,10 @@
 ifeq ($(subdir),csu)
 aux += init-arch
+CPPFLAGS-init-arch.c = -Din_init_arch_c
 tests += test-multiarch
 gen-as-const-headers += ifunc-defines.sym
+
+$(objpfx)test-multiarch: $(common-objpfx)csu/init-arch.os
 endif
 
 ifeq ($(subdir),string)
