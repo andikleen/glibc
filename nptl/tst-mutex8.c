@@ -344,7 +344,13 @@ do_test (void)
       puts ("0th mutexattr_settype failed");
       return 1;
     }
-
+#ifdef ENABLE_PI
+  if (pthread_mutexattr_setprotocol (&ma, PTHREAD_PRIO_INHERIT))
+    {
+      puts ("pthread_mutexattr_setprotocol2 failed");
+      return 1;
+    }
+#endif
   puts ("check " NAME " mutex");
   int res = check_type (NAME, &ma);
 #else
@@ -362,6 +368,13 @@ do_test (void)
       puts ("1st mutexattr_settype failed");
       return 1;
     }
+#ifdef ENABLE_PI
+  if (pthread_mutexattr_setprotocol (&ma, PTHREAD_PRIO_INHERIT))
+    {
+      puts ("pthread_mutexattr_setprotocol2 failed");
+      return 1;
+    }
+#endif
   puts ("check recursive mutex");
   res |= check_type ("recursive", &ma);
   if (pthread_mutexattr_destroy (&ma) != 0)
@@ -380,6 +393,13 @@ do_test (void)
       puts ("2nd mutexattr_settype failed");
       return 1;
     }
+#ifdef ENABLE_PI
+  if (pthread_mutexattr_setprotocol (&ma, PTHREAD_PRIO_INHERIT))
+    {
+      puts ("pthread_mutexattr_setprotocol3 failed");
+      return 1;
+    }
+#endif
   puts ("check error-checking mutex");
   res |= check_type ("error-checking", &ma);
   if (pthread_mutexattr_destroy (&ma) != 0)
