@@ -348,7 +348,13 @@ do_test (void)
       puts ("0th mutexattr_settype failed");
       return 1;
     }
-
+#ifdef ENABLE_PI
+  if (pthread_mutexattr_setprotocol (&ma, PTHREAD_PRIO_INHERIT))
+    {
+      puts ("pthread_mutexattr_setprotocol2 failed");
+      return 1;
+    }
+#endif
   puts ("check " NAME " mutex");
   int res = check_type (NAME, &ma);
 #else
