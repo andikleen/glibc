@@ -21,6 +21,7 @@
 #include <lowlevelrwlock.h>
 #include <pthread-errnos.h>
 #include <kernel-features.h>
+#include <hle.h>
 
 	.text
 
@@ -29,6 +30,53 @@
 	.align	16
 pthread_rwlock_timedrdlock:
 	cfi_startproc
+
+	cmpq  $0,RW_ELISION(%rdi)
+	js    not_elided_timedrdlock
+	jnz   2f
+	/* zero: use default  */
+
+	cmpl  $0,__rwlock_rtm_enabled(%rip)
+	jz    not_elided_timedrdlock
+
+2:	
+	mov   __rwlock_rtm_read_retries(%rip),%ecx
+
+try_trans_timedrdlock:
+	XBEGIN abort_timedrdlock
+
+	/* Lock reader/writer free?  */
+	cmpl  $0,WRITER(%rdi)
+	jnz   1f
+	cmpl  $0,NR_READERS(%rdi)
+	jnz   1f
+
+	/* Lock is free. Run with transaction  */
+	xor   %eax,%eax
+	ret
+
+	/* Lock is not free. Run  */
+1:	XABORT 0xff
+	jmp not_elided_timedrdlock
+
+	/* Abort happened.  */
+abort_timedrdlock:
+	testl $_XABORT_CONFLICT,%eax
+	jz    not_elided_timedrdlock
+
+	/* For a reader that aborts due a conflict retry speculation
+	   a limited number of times. This way when some reader aborts
+	   because the reader count is written the other readers will
+	   still elide, at the cost of retrying the speculation.  */
+
+	dec   %ecx
+	jnz   try_trans_timedrdlock
+
+	/* Otherwise we just fall back directly to the lock.
+	   Here's the place to add more adaptation.  */
+
+not_elided_timedrdlock:
+
 	pushq	%r12
 	cfi_adjust_cfa_offset(8)
 	cfi_rel_offset(%r12, 0)

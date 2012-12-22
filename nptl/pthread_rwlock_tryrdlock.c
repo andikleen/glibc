@@ -45,4 +45,6 @@ __pthread_rwlock_tryrdlock (pthread_rwlock_t *rwlock)
 
   return result;
 }
+#ifndef __pthread_rwlock_tryrdlock
 strong_alias (__pthread_rwlock_tryrdlock, pthread_rwlock_tryrdlock)
+#endif

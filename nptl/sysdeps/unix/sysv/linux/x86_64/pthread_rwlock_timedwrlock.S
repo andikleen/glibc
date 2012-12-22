@@ -21,6 +21,7 @@
 #include <lowlevelrwlock.h>
 #include <pthread-errnos.h>
 #include <kernel-features.h>
+#include <hle.h>
 
 	.text
 
@@ -29,6 +30,37 @@
 	.align	16
 pthread_rwlock_timedwrlock:
 	cfi_startproc
+
+	cmpq  $0,RW_ELISION(%rdi)
+	js    not_elided_timedwrlock
+	jnz   2f
+	/* zero: use default  */
+
+	cmpl  $0,__rwlock_rtm_enabled(%rip)
+	jz    not_elided_timedwrlock
+
+2:
+	XBEGIN abort
+
+	/* Lock free?  */
+	cmpl  $0,NR_READERS(%rdi)
+	jnz   1f
+	cmpl  $0,WRITER(%rdi)
+	jnz   1f
+
+	/* Lock is free. Run with transaction  */
+	xor   %rax, %rax
+	ret
+
+	/* Lock is not free. Run  */
+1:	XABORT 0xff
+	jmp   not_elided_timedwrlock
+
+	/* Abort happened.  */
+abort:
+	/* No retries here  */
+
+not_elided_timedwrlock:
 	pushq	%r12
 	cfi_adjust_cfa_offset(8)
 	cfi_rel_offset(%r12, 0)

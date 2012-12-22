@@ -21,7 +21,13 @@
 #include <lowlevelrwlock.h>
 #include <pthread-errnos.h>
 #include <kernel-features.h>
+#include <hle.h>
 
+#ifdef PIC
+#define MO(x) x##@GOTOFF(%edx)
+#else
+#define MO(x) x
+#endif
 
 	.text
 
@@ -47,6 +53,44 @@ pthread_rwlock_timedwrlock:
 
 	movl	28(%esp), %ebp
 	movl	32(%esp), %edi
+
+#ifdef PIC
+	SETUP_PIC_REG(dx)
+	addl $_GLOBAL_OFFSET_TABLE_,%edx
+#endif
+	cmpb  $0,RW_ELISION(%ebp)
+	js    not_elided_twrlock
+	jnz   try_trans_wrlock
+	/* zero: use default  */
+
+	cmpl	$0,MO(__rwlock_rtm_enabled)
+	jz	not_elided_twrlock
+
+try_trans_wrlock:
+	XBEGIN abort_twrlock
+
+	/* Lock writer free?  */
+	cmpl  $0,WRITER(%ebp)
+	jnz   1f
+	cmpl  $0,NR_READERS(%ebp)
+	jnz   1f
+
+	/* Lock is free. Run with transaction  */
+	xor   %eax,%eax
+
+	jmp   77f
+
+	/* Lock is not free. Run  */
+1:	XABORT 0xff
+	jmp   not_elided_twrlock
+
+	/* Abort happened.  */
+abort_twrlock:
+
+	/* Otherwise we just fall back directly to the lock.
+	   Here's the place to add more adaptation.  */
+
+not_elided_twrlock:
 
 	/* Get the lock.  */
 	movl	$1, %edx
@@ -156,7 +200,7 @@ pthread_rwlock_timedwrlock:
 
 7:	movl	%edx, %eax
 
-	addl	$8, %esp
+77:	addl	$8, %esp
 	cfi_adjust_cfa_offset(-8)
 	popl	%ebp
 	cfi_adjust_cfa_offset(-4)

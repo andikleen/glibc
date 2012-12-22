@@ -20,7 +20,7 @@
 #include <lowlevellock.h>
 #include <lowlevelrwlock.h>
 #include <kernel-features.h>
-
+#include <hle.h>
 
 	.text
 
@@ -29,6 +29,21 @@
 	.align	16
 __pthread_rwlock_unlock:
 	cfi_startproc
+
+	/* Is lock free?  */
+	cmpl $0,WRITER(%rdi)
+	jnz  1f
+	cmpl $0,NR_READERS(%rdi)
+	jnz  1f
+
+	/* Looks free. Assume transaction.
+	   If you crash here you unlocked a free lock.  */
+	XEND
+	xor  %rax,%rax
+	ret
+
+1:
+
 	/* Get the lock.  */
 	movl	$1, %esi
 	xorl	%eax, %eax
