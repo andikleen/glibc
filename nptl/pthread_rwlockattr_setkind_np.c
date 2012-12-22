@@ -27,12 +27,22 @@ pthread_rwlockattr_setkind_np (attr, pref)
 {
   struct pthread_rwlockattr *iattr;
 
+  iattr = (struct pthread_rwlockattr *) attr;
+
+  iattr->eliding = 0;
+  if (pref & (PTHREAD_RWLOCK_ELISION_NP|PTHREAD_RWLOCK_NO_ELISION_NP))
+    {
+      if (pref & PTHREAD_RWLOCK_ELISION_NP)
+        iattr->eliding = 1;
+      if (pref & PTHREAD_RWLOCK_NO_ELISION_NP)
+	iattr->eliding = -1;
+      pref &= ~(PTHREAD_RWLOCK_ELISION_NP|PTHREAD_RWLOCK_NO_ELISION_NP);
+    }
   if (pref != PTHREAD_RWLOCK_PREFER_READER_NP
       && pref != PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
       && __builtin_expect  (pref != PTHREAD_RWLOCK_PREFER_WRITER_NP, 0))
     return EINVAL;
 
-  iattr = (struct pthread_rwlockattr *) attr;
 
   iattr->lockkind = pref;
 

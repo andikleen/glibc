@@ -38,4 +38,6 @@ __pthread_rwlock_trywrlock (pthread_rwlock_t *rwlock)
 
   return result;
 }
+#ifndef __pthread_rwlock_trywrlock
 strong_alias (__pthread_rwlock_trywrlock, pthread_rwlock_trywrlock)
+#endif

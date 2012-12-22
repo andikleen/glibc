@@ -68,6 +68,10 @@ __pthread_rwlock_init (rwlock, attr)
 					      header.private_futex));
 #endif
 
+#ifdef __PTHREAD_RWLOCK_ELIDING
+  rwlock->__data.__eliding = iattr->eliding;
+#endif
+
   return 0;
 }
 strong_alias (__pthread_rwlock_init, pthread_rwlock_init)
