@@ -68,6 +68,10 @@ __pthread_rwlock_init (rwlock, attr)
 					      header.private_futex));
 #endif
 
+#ifdef __PTHREAD_RWLOCK_ELISION
+  rwlock->__data.__rw_elision = iattr->rw_elision;
+#endif
+
   return 0;
 }
 strong_alias (__pthread_rwlock_init, pthread_rwlock_init)

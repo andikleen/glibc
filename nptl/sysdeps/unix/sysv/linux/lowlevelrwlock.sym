@@ -3,6 +3,10 @@
 #include <bits/pthreadtypes.h>
 #include <bits/wordsize.h>
 
+#ifndef __PTHREAD_RWLOCK_ELISION
+#define __rw_elision __shared
+#endif
+
 --
 
 MUTEX		offsetof (pthread_rwlock_t, __data.__lock)
@@ -14,3 +18,4 @@ WRITERS_QUEUED	offsetof (pthread_rwlock_t, __data.__nr_writers_queued)
 FLAGS		offsetof (pthread_rwlock_t, __data.__flags)
 WRITER		offsetof (pthread_rwlock_t, __data.__writer)
 PSHARED		offsetof (pthread_rwlock_t, __data.__shared)
+RW_ELISION		offsetof (pthread_rwlock_t, __data.__rw_elision)
