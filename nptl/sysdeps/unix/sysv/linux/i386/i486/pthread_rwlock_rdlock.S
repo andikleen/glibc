@@ -21,8 +21,15 @@
 #include <lowlevelrwlock.h>
 #include <pthread-errnos.h>
 #include <kernel-features.h>
+#include <hle.h>
 
 #include <stap-probe.h>
+
+#ifdef PIC
+#define MO(x) x##@GOTOFF(%edx)
+#else
+#define MO(x) x
+#endif
 
 	.text
 
@@ -42,6 +49,82 @@ __pthread_rwlock_rdlock:
 	movl	12(%esp), %ebx
 
 	LIBC_PROBE (rdlock_entry, 1, %ebx)
+
+#ifdef ENABLE_ELISION
+#ifdef PIC
+	SETUP_PIC_REG(dx)
+	addl $_GLOBAL_OFFSET_TABLE_,%edx
+#endif
+	cmpb  $0,ELIDING(%ebx)
+	js    not_elided_rdlock
+	jnz   2f
+	/* zero: use default */
+
+	cmpl	$0,MO(__rwlock_rtm_enabled)
+	jz    not_elided_rdlock
+
+2:
+	mov   MO(__rwlock_rtm_read_retries),%ecx
+
+try_trans_rdlock:
+	XBEGIN abort_rdlock
+
+	/* Lock writer/reader free? */
+	cmpl  $0,WRITER(%ebx)
+	jnz   1f
+	cmpl  $0,NR_READERS(%ebx)
+	jnz   1f
+
+	/* Lock is free. Run with transaction */
+	xor   %eax,%eax
+
+	pop   %ebx
+	cfi_adjust_cfa_offset(-4)
+	pop   %esi
+	cfi_adjust_cfa_offset(-4)
+	ret
+
+	/* Lock is not free. Run */
+1:	XABORT 0xff
+	jmp not_elided_rdlock
+
+	/* Abort happened. */
+abort_rdlock:
+	cmpl  $0,MO(__tsx_abort_hook)
+	jz    1f
+	push  %ecx
+	cfi_adjust_cfa_offset(4)
+	push  %eax
+	cfi_adjust_cfa_offset(4)
+	call  *MO(__tsx_abort_hook)
+	pop   %eax
+	cfi_adjust_cfa_offset(-4)
+	pop   %ecx
+	xor   %esi, %esi	/* needed? */
+	movl  12(%esp), %ebx
+#ifdef PIC
+	SETUP_PIC_REG(dx)
+	addl $_GLOBAL_OFFSET_TABLE_,%edx
+#endif
+
+1:
+
+	testl $_XABORT_CONFLICT,%eax
+	jz    not_elided_rdlock
+
+	/* For a reader that aborts due a conflict retry speculation
+	   a limited number of times. This way when some reader aborts
+	   because the reader count is written the other readers will
+	   still elide, at the cost of retrying the speculation. */
+
+	dec   %ecx
+	jnz   try_trans_rdlock
+
+	/* Otherwise we just fall back directly to the lock.
+	   Here's the place to add more adaptation. */
+
+not_elided_rdlock:
+#endif
 
 	/* Get the lock.  */
 	movl	$1, %edx
@@ -188,5 +271,7 @@ __pthread_rwlock_rdlock:
 	cfi_endproc
 	.size	__pthread_rwlock_rdlock,.-__pthread_rwlock_rdlock
 
+#ifndef __pthread_rwlock_rdlock
 strong_alias (__pthread_rwlock_rdlock, pthread_rwlock_rdlock)
 hidden_def (__pthread_rwlock_rdlock)
+#endif

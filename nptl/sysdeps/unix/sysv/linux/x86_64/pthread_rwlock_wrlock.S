@@ -22,6 +22,7 @@
 #include <pthread-errnos.h>
 #include <kernel-features.h>
 #include <stap-probe.h>
+#include <hle.h>
 
 	.text
 
@@ -33,6 +34,49 @@ __pthread_rwlock_wrlock:
 
 	LIBC_PROBE (wrlock_entry, 1, %rdi)
 
+#ifdef ENABLE_ELISION
+	cmpq  $0,ELIDING(%rdi)
+	js    not_elided_wrlock
+	jnz   2f
+	/* zero: use default */
+
+	cmpl  $0,__rwlock_rtm_enabled(%rip)
+	jz    not_elided_wrlock
+
+2:
+	XBEGIN abort_wrlock
+
+	/* Lock free? */
+	cmpl  $0,WRITER(%rdi)
+	jnz   1f
+	cmpl  $0,NR_READERS(%rdi)
+	jnz   1f
+
+	/* Lock is free. Run with transaction */
+	xor   %eax,%eax
+	ret
+
+	/* Lock is not free. End transaction */
+1:	XABORT 0xff
+	jmp   not_elided_wrlock
+
+	/* Abort happened. */
+abort_wrlock:
+
+	/* Call the abort hook */
+	cmpq  $0,__tsx_abort_hook(%rip)
+	jz    1f
+	push  %rdi
+	cfi_adjust_cfa_offset(8)
+	mov   %eax,%edi
+	call  *__tsx_abort_hook(%rip)
+	pop   %rdi
+	cfi_adjust_cfa_offset(-8)
+
+1:
+
+not_elided_wrlock:
+#endif
 	xorq	%r10, %r10
 
 	/* Get the lock.  */
@@ -161,5 +205,7 @@ __pthread_rwlock_wrlock:
 	cfi_endproc
 	.size	__pthread_rwlock_wrlock,.-__pthread_rwlock_wrlock
 
+#ifndef __pthread_rwlock_wrlock
 strong_alias (__pthread_rwlock_wrlock, pthread_rwlock_wrlock)
 hidden_def (__pthread_rwlock_wrlock)
+#endif
