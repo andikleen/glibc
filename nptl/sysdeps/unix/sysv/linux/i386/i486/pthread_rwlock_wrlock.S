@@ -21,8 +21,15 @@
 #include <lowlevelrwlock.h>
 #include <pthread-errnos.h>
 #include <kernel-features.h>
+#include <hle.h>
 
 #include <stap-probe.h>
+
+#ifdef PIC
+#define MO(x) x@GOTOFF(%edx)
+#else
+#define MO(x) x
+#endif
 
 	.text
 
@@ -42,6 +49,53 @@ __pthread_rwlock_wrlock:
 	movl	12(%esp), %ebx
 
 	LIBC_PROBE (wrlock_entry, 1, %ebx)
+
+#ifdef PIC
+	SETUP_PIC_REG(dx)
+	addl $_GLOBAL_OFFSET_TABLE_,%edx
+#endif
+
+	cmpl  $0,MO(__elision_available)
+	jz    not_elided_wrlock	
+
+	cmpb  $0,ELIDING(%ebx)
+	js    not_elided_wrlock
+	jnz   try_trans_wrlock
+	/* zero: use default */
+
+	cmpl    $0,MO(__rwlock_rtm_enabled)
+	jz      not_elided_wrlock
+
+try_trans_wrlock:
+	XBEGIN abort_wrlock
+
+	/* Lock writer free? */
+	/* Ignore readers because we don't need them */
+	cmpl  $0,WRITER(%ebx)
+	jnz   1f
+	cmpl  $0,NR_READERS(%ebx)
+	jnz   1f
+
+	/* Lock is free. Run with transaction */
+	xor   %eax,%eax
+
+	pop   %ebx
+	cfi_adjust_cfa_offset(-4)
+	pop   %esi
+	cfi_adjust_cfa_offset(-4)
+	ret
+
+	/* Lock is not free. Run */
+1:	XABORT 0xff
+	jmp   not_elided_wrlock
+
+	/* Abort happened. */
+abort_wrlock:
+
+	/* Otherwise we just fall back directly to the lock.
+	   Here's the place to add more adaptation. */
+
+not_elided_wrlock:
 
 	/* Get the lock.  */
 	movl	$1, %edx
@@ -179,5 +233,7 @@ __pthread_rwlock_wrlock:
 	cfi_endproc
 	.size	__pthread_rwlock_wrlock,.-__pthread_rwlock_wrlock
 
+#ifndef __pthread_rwlock_wrlock
 strong_alias (__pthread_rwlock_wrlock, pthread_rwlock_wrlock)
 hidden_def (__pthread_rwlock_wrlock)
+#endif
