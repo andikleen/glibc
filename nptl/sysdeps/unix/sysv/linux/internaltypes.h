@@ -20,7 +20,7 @@
 #define _INTERNALTYPES_H	1
 
 #include <stdint.h>
-
+#include <endian.h>
 
 struct pthread_attr
 {
@@ -86,7 +86,17 @@ struct pthread_condattr
 struct pthread_rwlockattr
 {
   int lockkind;
-  int pshared;
+  /* This used to be an int pshared. We keep the pshared at the
+     same location, so that a one it in it earlier stays. */
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+  short pshared;
+  char  eliding;
+  char  pad;
+#else
+  char  eliding;
+  char  pad;
+  short pshared;
+#endif
 };
 
 
