@@ -1,5 +1,5 @@
 @node POSIX Threads
-@c @node POSIX Threads, , Cryptographic Functions, Top
+@c @node POSIX Threads, Lock elision, Cryptographic Functions, Top
 @chapter POSIX Threads
 @c %MENU% POSIX Threads
 @cindex pthreads
@@ -9,6 +9,7 @@ This chapter describes the @glibcadj{} POSIX Thread implementation.
 @menu
 * Thread-specific Data::          Support for creating and
 				  managing thread-specific data
+* Initialize and destroy a mutex:: Initialize and destroy a mutex.
 @end menu
 
 @node Thread-specific Data
@@ -42,3 +43,15 @@ thread.
 Associate the thread-specific @var{value} with @var{key} in the calling thread.
 
 @end table
+
+@node Initialize and destroy a mutex
+@section Initialize and destroy a mutex
+
+As a extension to the standard POSIX mutex type initializers @glibcadj{} allows
+to set generic flags in the initializer using PTHREAD_MUTEX_INIT_NP, ored with the
+mutex type.  There is no error checking for illegal combinations, which may result
+in undefined behavior.
+
+@smallexample
+pthread_mutex_t mutex = PTHREAD_MUTEX_INIT_NP(...);
+@end smallexample

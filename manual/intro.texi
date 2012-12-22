@@ -703,6 +703,9 @@ information about the hardware and software configuration your program
 is executing under.
 
 @item
+@ref{Lock elision} describes elided locks in POSIX threads.
+
+@item
 @ref{System Configuration}, tells you how you can get information about
 various operating system limits.  Most of these parameters are provided for
 compatibility with POSIX.
