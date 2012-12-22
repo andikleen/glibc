@@ -25,6 +25,17 @@
 
 #include <stap-probe.h>
 
+#ifndef lll_timedlock_elision
+#define lll_timedlock_elision(a,dummy,b,c) lll_timedlock(a, b, c)
+#endif
+
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
+
+#ifndef FORCE_ELISION
+#define FORCE_ELISION(m, s)
+#endif
 
 int
 pthread_mutex_timedlock (mutex, abstime)
@@ -40,7 +51,7 @@ pthread_mutex_timedlock (mutex, abstime)
   /* We must not check ABSTIME here.  If the thread does not block
      abstime must not be checked for a valid value.  */
 
-  switch (__builtin_expect (PTHREAD_MUTEX_TYPE (mutex),
+  switch (__builtin_expect (PTHREAD_MUTEX_TYPE_EL (mutex),
 			    PTHREAD_MUTEX_TIMED_NP))
     {
       /* Recursive mutex.  */
@@ -78,13 +89,37 @@ pthread_mutex_timedlock (mutex, abstime)
       /* FALLTHROUGH */
 
     case PTHREAD_MUTEX_TIMED_NP:
+      FORCE_ELISION (mutex, goto elision);
+    case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     simple:
       /* Normal mutex.  */
       result = lll_timedlock (mutex->__data.__lock, abstime,
 			      PTHREAD_MUTEX_PSHARED (mutex));
       break;
 
+    case PTHREAD_MUTEX_TIMED_ELISION_NP:
+    elision: __attribute__((unused))
+      /* Don't record ownership */
+      if (!ENABLE_ELISION)
+	goto simple;
+      return lll_timedlock_elision (mutex->__data.__lock,
+				    mutex->__data.__spins,
+				    abstime,
+				    PTHREAD_MUTEX_PSHARED (mutex));
+
+
+    case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
+    adaptive_elision: __attribute__((unused))
+      if (ENABLE_ELISION
+	  && !lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision))
+        return 0;
+      goto adaptive;
+
     case PTHREAD_MUTEX_ADAPTIVE_NP:
+      FORCE_ELISION (mutex, goto adaptive_elision);
+
+    case PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP:
+    adaptive:
       if (! __is_smp)
 	goto simple;
 
