@@ -25,6 +25,14 @@
 #include <lowlevellock.h>
 #include <stap-probe.h>
 
+#ifndef lll_lock_elision
+#define lll_lock_elision(lock, try_lock, private)	({ \
+      lll_lock (lock, private); 0; })
+#endif
+
+#ifndef lll_trylock_elision
+#define lll_trylock_elision(a,t,u) lll_trylock(a)
+#endif
 
 #ifndef LLL_MUTEX_LOCK
 # define LLL_MUTEX_LOCK(mutex) \
@@ -34,11 +42,50 @@
 # define LLL_ROBUST_MUTEX_LOCK(mutex, id) \
   lll_robust_lock ((mutex)->__data.__lock, id, \
 		   PTHREAD_ROBUST_MUTEX_PSHARED (mutex))
+# define LLL_MUTEX_LOCK_ELISION(mutex) \
+  lll_lock_elision ((mutex)->__data.__lock, (mutex)->__data.__elision, \
+		   PTHREAD_MUTEX_PSHARED (mutex))
+# define LLL_MUTEX_TRYLOCK_ELISION(mutex) \
+  lll_trylock_elision((mutex)->__data.__lock, (mutex)->__data.__elision, \
+		   PTHREAD_MUTEX_PSHARED (mutex))
 #endif
 
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
+
+#ifndef FORCE_ELISION
+#define FORCE_ELISION(m, s)
+#endif
 
 static int __pthread_mutex_lock_full (pthread_mutex_t *mutex)
      __attribute_noinline__;
+
+static inline __attribute__((always_inline)) void
+adaptive_lock (pthread_mutex_t *mutex)
+{
+  if (LLL_MUTEX_TRYLOCK (mutex) != 0)
+    {
+      int cnt = 0;
+      int max_cnt = MIN (MAX_ADAPTIVE_COUNT, mutex->__data.__spins * 2 + 10);
+      do
+        {
+	  if (cnt++ >= max_cnt)
+	    {
+	      LLL_MUTEX_LOCK (mutex);
+	      break;
+	    }
+
+#ifdef BUSY_WAIT_NOP
+	  BUSY_WAIT_NOP;
+#endif
+	}
+      while (LLL_MUTEX_TRYLOCK (mutex) != 0);
+
+      mutex->__data.__spins += (cnt - mutex->__data.__spins) / 8;
+    }
+  assert (mutex->__data.__owner == 0);
+}
 
 
 int
@@ -47,26 +94,43 @@ __pthread_mutex_lock (mutex)
 {
   assert (sizeof (mutex->__size) >= sizeof (mutex->__data));
 
-  unsigned int type = PTHREAD_MUTEX_TYPE (mutex);
+  unsigned int type = PTHREAD_MUTEX_TYPE_ELISION (mutex);
 
   LIBC_PROBE (mutex_entry, 1, mutex);
 
-  if (__builtin_expect (type & ~PTHREAD_MUTEX_KIND_MASK_NP, 0))
+  if (__builtin_expect (type & ~(PTHREAD_MUTEX_KIND_MASK_NP
+				 | PTHREAD_MUTEX_ELISION_FLAGS_NP), 0))
     return __pthread_mutex_lock_full (mutex);
 
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
 
-  if (__builtin_expect (type, PTHREAD_MUTEX_TIMED_NP)
-      == PTHREAD_MUTEX_TIMED_NP)
+  /* A switch would be likely faster.  */
+
+  if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_NP, 1))
     {
+      FORCE_ELISION (mutex, goto elision);
     simple:
       /* Normal mutex.  */
       LLL_MUTEX_LOCK (mutex);
       assert (mutex->__data.__owner == 0);
     }
+  else if (__builtin_expect (type == PTHREAD_MUTEX_TIMED_ELISION_NP, 1))
+    {
+  elision: __attribute__((unused))
+      if (!ENABLE_ELISION)
+        {
+	  mutex->__data.__kind &= ~PTHREAD_MUTEX_ELISION_NP;
+          goto simple;
+	}
+      /* Don't record owner or users for elision case. */
+      int ret = LLL_MUTEX_LOCK_ELISION (mutex);
+      assert (mutex->__data.__owner == 0);
+      return ret;
+    }
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
       /* Recursive mutex.  */
+    recursive:
 
       /* Check whether we already hold the mutex.  */
       if (mutex->__data.__owner == id)
@@ -89,35 +153,42 @@ __pthread_mutex_lock (mutex)
     }
   else if (__builtin_expect (type == PTHREAD_MUTEX_ADAPTIVE_NP, 1))
     {
-      if (! __is_smp)
+      FORCE_ELISION (mutex, goto elision_adaptive);
+  adaptive:
+      if (!__is_smp)
 	goto simple;
-
-      if (LLL_MUTEX_TRYLOCK (mutex) != 0)
+      adaptive_lock (mutex);
+    }
+  else if (type == PTHREAD_MUTEX_TIMED_ELISION_NP)
+    goto elision;
+  else if (type == PTHREAD_MUTEX_TIMED_NO_ELISION_NP)
+    goto simple;
+  else if (type == PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP)
+    goto adaptive;
+  else if (type == PTHREAD_MUTEX_ADAPTIVE_ELISION_NP)
+    {
+  elision_adaptive: __attribute__((unused))
+      if (!ENABLE_ELISION)
 	{
-	  int cnt = 0;
-	  int max_cnt = MIN (MAX_ADAPTIVE_COUNT,
-			     mutex->__data.__spins * 2 + 10);
-	  do
-	    {
-	      if (cnt++ >= max_cnt)
-		{
-		  LLL_MUTEX_LOCK (mutex);
-		  break;
-		}
-
-#ifdef BUSY_WAIT_NOP
-	      BUSY_WAIT_NOP;
-#endif
-	    }
-	  while (LLL_MUTEX_TRYLOCK (mutex) != 0);
-
-	  mutex->__data.__spins += (cnt - mutex->__data.__spins) / 8;
+	  mutex->__data.__kind &= ~PTHREAD_MUTEX_ELISION_NP;
+	  goto adaptive;
 	}
-      assert (mutex->__data.__owner == 0);
+      /* FIXME: This is a poor algorithm currently.  */
+      if (!LLL_MUTEX_TRYLOCK_ELISION (mutex))
+        return 0;
+      adaptive_lock (mutex);
+      /* No owner for elision */
+      return 0;
+    }
+  else if (PTHREAD_MUTEX_TYPE (mutex) == PTHREAD_MUTEX_RECURSIVE_NP)
+    {
+      /* In case the user set the elision flags here. 
+         Elision not supported so far.  */
+      goto recursive;
     }
   else
     {
-      assert (type == PTHREAD_MUTEX_ERRORCHECK_NP);
+      assert (PTHREAD_MUTEX_TYPE (mutex) == PTHREAD_MUTEX_ERRORCHECK_NP);
       /* Check whether we already hold the mutex.  */
       if (__builtin_expect (mutex->__data.__owner == id, 0))
 	return EDEADLK;

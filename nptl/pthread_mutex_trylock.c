@@ -22,6 +22,20 @@
 #include "pthreadP.h"
 #include <lowlevellock.h>
 
+#ifndef lll_trylock_elision
+#define lll_trylock_elision(a,t,u) lll_trylock(a)
+#endif
+
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
+
+#ifndef DO_ELISION
+#define DO_ELISION(m) 0
+#endif
+
+/* We don't force elision in trylock, because this can lead to inconsistent
+   lock state if the lock was actually busy. */
 
 int
 __pthread_mutex_trylock (mutex)
@@ -30,10 +44,12 @@ __pthread_mutex_trylock (mutex)
   int oldval;
   pid_t id = THREAD_GETMEM (THREAD_SELF, tid);
 
-  switch (__builtin_expect (PTHREAD_MUTEX_TYPE (mutex),
+  switch (__builtin_expect (PTHREAD_MUTEX_TYPE_ELISION (mutex),
 			    PTHREAD_MUTEX_TIMED_NP))
     {
       /* Recursive mutex.  */
+    case PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_ELISION_NP:
+    case PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_NO_ELISION_NP:
     case PTHREAD_MUTEX_RECURSIVE_NP:
       /* Check whether we already hold the mutex.  */
       if (mutex->__data.__owner == id)
@@ -57,10 +73,29 @@ __pthread_mutex_trylock (mutex)
 	}
       break;
 
-    case PTHREAD_MUTEX_ERRORCHECK_NP:
+    case PTHREAD_MUTEX_TIMED_ELISION_NP:
+    case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
+    elision:
+      if (!ENABLE_ELISION)
+	goto normal;
+      if (lll_trylock_elision (mutex->__data.__lock,
+			       mutex->__data.__elision,
+			       mutex->__data.__kind
+			       	& PTHREAD_MUTEX_UPGRADED_ELISION_NP) != 0)
+        break;
+      /* Don't record the ownership. */
+      return 0;
+
     case PTHREAD_MUTEX_TIMED_NP:
     case PTHREAD_MUTEX_ADAPTIVE_NP:
-      /* Normal mutex.  */
+      if (DO_ELISION (mutex))
+	goto elision;
+      /*FALL THROUGH*/
+    case PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP:
+      /*FALL THROUGH*/
+    case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
+    case PTHREAD_MUTEX_ERRORCHECK_NP:
+    normal:
       if (lll_trylock (mutex->__data.__lock) != 0)
 	break;
 
@@ -378,4 +413,9 @@ __pthread_mutex_trylock (mutex)
 
   return EBUSY;
 }
+
+#ifndef __pthread_mutex_trylock
+#ifndef pthread_mutex_trylock
 strong_alias (__pthread_mutex_trylock, pthread_mutex_trylock)
+#endif
+#endif
