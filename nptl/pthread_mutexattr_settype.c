@@ -26,8 +26,12 @@ __pthread_mutexattr_settype (attr, kind)
      int kind;
 {
   struct pthread_mutexattr *iattr;
+  int mkind = kind & ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
 
-  if (kind < PTHREAD_MUTEX_NORMAL || kind > PTHREAD_MUTEX_ADAPTIVE_NP)
+  if (mkind < PTHREAD_MUTEX_NORMAL || mkind > PTHREAD_MUTEX_ADAPTIVE_NP)
+    return EINVAL;
+  /* Cannot set multiple flags.  */
+  if ((kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) == PTHREAD_MUTEX_ELISION_FLAGS_NP)
     return EINVAL;
 
   iattr = (struct pthread_mutexattr *) attr;
