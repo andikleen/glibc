@@ -1,0 +1,299 @@
+@node Lock elision, Language Features, Debugging Support, Top
+@c %MENU% Lock elision
+@chapter Lock elision
+
+@c create the bizarre situation that lock elision is documented, but pthreads isn't
+
+This chapter describes the lock implementation implementation for pthread
+locks.
+
+@menu
+* Lock elision introduction::	What is lock elision?
+* Semantic differences of elided locks::
+* Tuning lock elision::
+* Setting elision for individual @code{pthread_mutex_t}::
+* Setting @code{pthread_mutex_t} elision using environment variables::
+* Setting elision for individual @code{pthread_rwlock_t}::
+* Setting @code{pthread_rwlock_t} elision using environment variables::
+@end menu 
+
+@node Lock elision introduction
+@section Lock elision introduction
+
+Lock elision is a technique to improve lock scaling. It runs
+lock regions in parallel using hardware support for a transactional execution
+mode. The lock region is executed speculatively, and as long
+as there is no conflict or other reason for transaction abort the lock
+will executed in parallel. If an transaction abort occurs, any 
+side effect of the speculative execution is undone, the lock is taken
+for real and the lock region re-executed. This improves scalability
+of the program because locks do not need to wait for each other.
+
+The standard @code{pthread_mutex_t} mutexes and @code{pthread_rwlock_t} rwlocks
+can be transparently elided by the C library.
+
+Lock elision may lower performance if transaction aborts occur too frequently.
+In this case it is recommended to use a PMU profiler to find the causes for
+the aborts first and try to eliminate them. If that is not possible
+elision can be disabled for a specific lock or for the whole program.
+Alternatively elision can be disabled completely, and only enabled for 
+specific locks that are known to be elision friendly.
+
+The defaults locks are adaptive. The lock library decides whether elision
+is profitable based on the abort rates, and automatically disables
+elision for a lock when it aborts too often. After some time elision
+is retried, in case the workload changed.
+
+Lock elision is currently supported for default (timed) mutexes and for
+adaptive mutexes. Other lock types do not elide. Condition variables
+also do not elide. This may change in future versions.
+
+@node Semantic differences of elided locks
+@section Semantic differences of elided locks
+
+Elided locks have some semantic differences to classic locks. These differences 
+are only visible when the lock is successfully elided. Since elision may always
+fail a program cannot rely on any of these semantics.
+
+@itemize
+@item 
+Elided locks always behave like read-write locks.
+
+@item
+Mutexes and write rwlocks can be locked recursively inside the lock region. 
+This behavior is visible through @code{pthread_mutex_trylock}. This 
+behavior is not enabled by default for default timed locks, only
+for locks that have been explicitely marked for elision with
+@code{PTHREAD_MUTEX_ELISION_NP}. The default locks will abort
+elision for nested trylocks.
+
+@smallexample
+pthread_mutex_lock (&lock);
+if (pthread_mutex_trylock (&lock) == 0) 
+      /* with elision we come here */
+else
+      /* with no elision we always come here */
+@end smallexample
+
+And also through @code{pthread_mutex_timedlock}. This behavior is unconditional
+for elided locks.
+
+@smallexample
+pthread_mutex_lock (&lock);
+if (pthread_mutex_timedlock (&lock, &timeout) == 0) 
+     /* With elision we always come here */
+else
+     /* With no elision we always come here because timeout happens. */
+@end smallexample
+
+Similar semantic changes apply to @code{pthread_rwlock_trywrlock} and
+@code{pthread_rwlock_timedwrlock}.
+
+@item
+@code{pthread_mutex_destroy} does not return an error when the lock is locked
+and will clear the lock state.
+
+@item
+@code{pthread_mutex_t} and @code{pthread_rwlock_t} appear free from other threads.
+
+This can be visible through trylock or timedlock.
+In most cases checking this is a existing latent race in the program, but there may 
+be rare cases when it is not.
+
+@item
+@code{EAGAIN} and @code{EDEADLK} in rwlocks will not happen under elision.
+
+@item
+@code{pthread_mutex_unlock} does not return an error when unlocking a free lock.
+
+@item
+Elision changes timing because locks now run in parallel.
+Timing differences may expose latent race bugs in the program. Programs using time based synchronization
+(as opposed to using data dependencies) may change behavior.
+
+@end itemize
+
+@node Tuning lock elision
+@section Tuning lock elision
+
+Critical regions may need some tuning to get the benefit of lock elision.
+This is based on the abort rates, which can be determined by a PMU profiler
+(e.g. perf on GNU/Linux systems). When the abort rate is too high lock
+scaling will not improve. Generally lock elision feedback should be done
+only based on profile feedback.
+
+Most of these optimizations will improve performance even without lock elision
+because they will minimize cache line bouncing between threads or make
+lock regions smaller.
+
+Common causes of transactional aborts:
+
+@itemize
+@item 
+Not elidable operations like system calls, IO, CPU exceptions.
+
+Try to move out of the critical section when common. Note that these often happen at program startup only.
+@item
+Global statistic counts
+
+Global statistic variables tend to cause conflicts. Either disable, or make per thread or as a last resort sample
+(not update every operation)
+@item
+False sharing of variables or data structures causing conflicts with other threads
+
+Add padding as needed.
+@item 
+Other conflicts on the same cache lines with other threads
+
+Minimize conflicts with other threads. This may require changes to the data structures.
+@item
+Capacity overflow
+
+The memory transaction used for lock elision has a limited capacity. Make the critical region smaller
+or move operations that do not need to be protected by the lock outside.
+
+@item
+Rewriting already set flags
+
+Setting flags or variables in shared objects that are already set may cause conflicts. Add a check
+to only write when the value changed.
+@end itemize
+
+@node Setting elision for individual @code{pthread_mutex_t}
+@section Setting elision for individual @code{pthread_mutex_t}
+
+Elision can be explicitly disabled or enabled for each @code{pthread_mutex_t} in the program. 
+This overrides any other defaults set by environment variables for this lock.
+
+@code{pthrex_mutex_t} Initializers for using in variable initializations.
+
+@itemize
+@item
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP)
+Force lock elision for a (default) timed mutex.
+
+@item
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_NO_ELISION_NP)
+Force no lock elision for a (default) timed mutex.
+
+@item
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_ELISION_NP)
+Force lock elision for an adaptive mutex.
+
+@item
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_NO_ELISION_NP)
+Force no lock elision for an adaptive mutex.
+@end itemize
+
+@smallexample
+/* Disable lock elision for mylock */
+pthread_mutex_t mylock = PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP);
+@end smallexample
+
+The lock type can also be set at runtime using @code{pthread_mutexattr_settype} and @code{pthread_mutex_init}.
+
+@smallexample
+/* Force lock elision for a dynamically allocated mutex */
+pthread_mutexattr_t attr;
+pthread_mutexattr_init (&attr);
+pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP);
+pthread_mutex_init (&object->mylock, &attr);
+@end smallexample
+
+@code{pthread_mutex_gettype} will return additional flags too.
+
+@node Setting @code{pthread_mutex_t} elision using environment variables
+@section Setting @code{pthread_mutex_t} elision using environment variables
+The elision of @code{pthread_mutex_t} mutexes can be configured at runtime with the @code{PTHREAD_MUTEX}
+environment variable.  This will force a specific lock type for all
+mutexes in the program that do not have another type set explicitly.
+An explicitly set lock type will override the environment variable.
+
+@smallexample
+# run myprogram with no elision
+PTHREAD_MUTEX=none myprogram
+@end smallexample
+
+The default depends on the C library build configuration and whether the hardware
+supports lock elision.
+
+@itemize
+@item    
+@code{PTHREAD_MUTEX=elision}
+Use elided mutexes, unless explicitely disabled in the program.
+    
+@item
+@code{PTHREAD_MUTEX=none}
+Don't use elide mutexes, unless explicitly enable in the program.
+@end itemize
+
+In addition additional tunables can be configured through the environment variable,
+like this:
+@code{PTHREAD_MUTEX=adaptive:retry_lock_busy=10,retry_lock_internal_abort=20} 
+Note these parameters do not consistitute an ABI and may change or disappear 
+at any time as the lock elision algorithm evolves. 
+
+Currently supported parameters are:
+    
+@itemize
+@item
+retry_lock_busy
+How often to not attempt a transaction when the lock is seen as busy.
+    
+@item
+retry_lock_internal_abort
+How often to not attempt a transaction after an internal abort is seen.
+
+@item    
+retry_try_xbegin
+How often to retry the transaction on external aborts.
+
+@item
+retry_trylock_internal_abort
+How often to retry the transaction on internal aborts during trylock.
+This setting is also used for adaptive locks.
+
+@end itemize
+
+@node Setting elision for individual @code{pthread_rwlock_t}
+@section Setting elision for individual @code{pthread_rwlock_t}
+
+Elision can be explicitly disabled or enabled for each @code{pthread_rwlock_t} in the program. 
+This overrides any other defaults set by environment variables for this lock.
+
+Valid flags are @code{PTHREAD_RWLOCK_ELISION_NP} to force elision and @code{PTHREAD_RWLOCK_NO_ELISION_NP}
+to disable elision. These can be ored with other rwlock types.
+
+@smallexample
+/* Force no lock elision for a dynamically allocated rwlock */
+pthread_rwlockattr_t rwattr;
+pthread_rwlockattr_init (&rwattr);
+pthread_rwlockattr_settype (&rwattr, PTHREAD_RWLOCK_NO_ELISION_NP);
+pthread_rwlock_init (&object->myrwlock, &rwattr);
+@end smallexample
+
+@node Setting @code{pthread_rwlock_t} elision using environment variables
+@section Setting @code{pthread_rwlock_t} elision using environment variables
+The elision of @code{pthread_rwlock_t} rwlockes can be configured at
+runtime with the @code{PTHREAD_RWLOCK} environment variable.
+This will force a specific lock type for all
+rwlockes in the program that do not have another type set explicitly.
+An explicitly set lock type will override the environment variable.
+
+@smallexample
+# run myprogram with no elision
+PTHREAD_RWLOCK=none myprogram
+@end smallexample
+
+The default depends on the C library build configuration and whether the hardware
+supports lock elision.
+
+@itemize
+@item    
+@code{PTHREAD_RWLOCK=elision}
+Use elided rwlockes, unless explicitely disabled in the program.
+    
+@item
+@code{PTHREAD_RWLOCK=none}
+Don't use elided rwlocks, unless explicitely enabled in the program.
+@end itemize
