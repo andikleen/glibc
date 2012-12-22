@@ -86,7 +86,9 @@ struct pthread_condattr
 struct pthread_rwlockattr
 {
   int lockkind;
-  int pshared;
+  short pshared;
+  char  eliding;
+  char  pad;
 };
 
 
