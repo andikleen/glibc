@@ -239,4 +239,3 @@ void (*const init_array []) (int, char **, char **)
 {
   &elision_init
 };
-
