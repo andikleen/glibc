@@ -30,7 +30,7 @@ __pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
 {
   unsigned status;
 
-  if ((rwlock->__data.__eliding > 0 && __elision_available) 
+  if ((rwlock->__data.__eliding > 0 && __elision_available)
       || (rwlock->__data.__eliding == 0 && __rwlock_rtm_enabled))
     {
       if ((status = _xbegin()) == _XBEGIN_STARTED)
