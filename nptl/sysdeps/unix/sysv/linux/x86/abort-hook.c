@@ -1,5 +1,5 @@
-/* abort-hook.c: Lock elision tunable parameters.
-   Copyright (C) 2012 Free Software Foundation, Inc.
+/* abort-hook.c: Abort debugging support code.
+   Copyright (C) 2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
