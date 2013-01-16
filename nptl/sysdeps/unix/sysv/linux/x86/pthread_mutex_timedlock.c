@@ -21,4 +21,3 @@
 
 #define ENABLE_ELISION (__elision_available != 0)
 #include "nptl/pthread_mutex_timedlock.c"
-
