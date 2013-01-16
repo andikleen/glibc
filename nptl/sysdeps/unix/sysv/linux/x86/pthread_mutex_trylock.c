@@ -1,4 +1,4 @@
-/* Elided IFUNC version of pthread_mutex_trylock.
+/* Elided version of pthread_mutex_trylock.
    Copyright (C) 2011, 2012, 2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
