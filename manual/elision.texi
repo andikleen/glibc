@@ -61,7 +61,7 @@ fail a program cannot rely on any of these semantics.
 Elided locks always behave like read-write locks.
 
 @item
-Locks can be locked recursively inside the lock region. 
+Mutexes and write rwlocks can be locked recursively inside the lock region. 
 This behavior is visible through @code{pthread_mutex_trylock}:
 
 @smallexample
@@ -104,7 +104,8 @@ be rare cases when it is not.
 
 @item
 Elision changes timing because locks now run in parallel.
-Timing differences may expose latent race bugs in the program. Programs using time based synchronization (as opposed to using data dependencies) may change behaviour.
+Timing differences may expose latent race bugs in the program. Programs using time based synchronization
+(as opposed to using data dependencies) may change behavior.
 
 @end itemize
 
