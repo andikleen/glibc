@@ -24,7 +24,7 @@ __pthread_abort_hook_t __tsx_abort_hook attribute_hidden;
    This is useful for debugging situations where you need to get
    information out of a transaction. */
 
-__pthread_abort_hook_t __pthread_set_abort_hook(__pthread_abort_hook_t hook)
+__pthread_abort_hook_t __pthread_set_elision_abort_hook(__pthread_abort_hook_t hook)
 {
   __pthread_abort_hook_t old = __tsx_abort_hook;
   __tsx_abort_hook = hook;
