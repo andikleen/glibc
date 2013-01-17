@@ -291,26 +291,34 @@ Don't use elided rwlocks, unless explicitely enabled in the program.
 @cindex abort hooks for lock elision
 @comment pthread.h
 @comment GNU
-@deftypefun {__pthread_abort_hook_t} __pthread_set_abort_hook (__pthread_abort_hook_t @var{hook}) 
+@deftypefun {__pthread_abort_hook_t} __pthread_set_elision_abort_hook (__pthread_abort_hook_t @var{hook}) 
 
 For some debugging situations it can be useful to call custom code on all transaction aborts.
 The C Library allows to set a hook that is called from all of its transaction abort handlers.
 
-The hook can be set with the @code{__pthread_set_abort_hook} function. It consists of a callback
-@var{hook} that gets the CPU specific abort code as first argument. @code{__pthread_set_abort_hook} returns
+The hook can be set with the @code{__pthread_set_elision_abort_hook} function. It consists of a callback
+@var{hook} that gets the CPU specific abort code as first argument. @code{__pthread_set_elision_abort_hook} returns
 the previous hook. Passing NULL for @var{hook} removes the hook.
 
 With TSX this hook can be used to pass up to one byte of information out of a transaction using
 the _xabort() intrinsic (there is no other way to do this).
 
-@c xxx how do i do { } in the examples?
 @smallexample
-void my_abort_hook (unsigned code);
-...
+enum { BAD_COND1 };
 
-__pthread_set_abort_hook (my_abort_hook);
+void my_abort_hook (unsigned status);
+@{
+  if ((code & _XABORT_EXPLICIT) && _XABORT_CODE(status) == BAD_COND1)
+    printf("bad condition1 happend\n");
+@}
+
+__pthread_set_elision_abort_hook (my_abort_hook);
+pthread_mutex_lock(&lock);
+if (bad condition in lock)
+    _xabort(BAD_COND1);
+pthread_mutex_unlock(&lock);
 @end smallexample
 
-@code{__pthread_set_abort_hook} is a GNU extension.
+@code{__pthread_set_elision_abort_hook} is a GNU extension.
 @end deftypefun
 
