@@ -1,6 +1,5 @@
-/* Copyright (C) 2002-2013 Free Software Foundation, Inc.
+/* Copyright (C) 2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Ulrich Drepper <drepper@redhat.com>, 2002.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -18,19 +17,19 @@
 
 #include <pthreadP.h>
 
-
 int
-pthread_mutexattr_gettype (attr, kind)
-     const pthread_mutexattr_t *attr;
-     int *kind;
+pthread_mutexattr_getelision_np (const pthread_mutexattr_t *attr, int *elision)
 {
   const struct pthread_mutexattr *iattr;
 
   iattr = (const struct pthread_mutexattr *) attr;
 
-  *kind = iattr->mutexkind &
-	  	~(PTHREAD_MUTEXATTR_FLAG_BITS|PTHREAD_MUTEX_ELISION_FLAGS_NP);
+  if (iattr->mutexkind & PTHREAD_MUTEX_ELISION_NP)
+    *elision = PTHREAD_ELISION_ALWAYS;
+  else if (iattr->mutexkind & PTHREAD_MUTEX_NO_ELISION_NP)
+    *elision = PTHREAD_ELISION_NEVER;
+  else
+    *elision = PTHREAD_ELISION_DEFAULT;
 
   return 0;
 }
-weak_alias (pthread_mutexattr_gettype, pthread_mutexattr_getkind_np)
