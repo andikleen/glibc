@@ -25,11 +25,11 @@ pthread_mutexattr_getelision_np (const pthread_mutexattr_t *attr, int *elision)
   iattr = (const struct pthread_mutexattr *) attr;
 
   if (iattr->mutexkind & PTHREAD_MUTEX_ELISION_NP)
-    *elision = PTHREAD_ELISION_ALWAYS;
+    *elision = PTHREAD_ELISION_ALWAYS_NP;
   else if (iattr->mutexkind & PTHREAD_MUTEX_NO_ELISION_NP)
-    *elision = PTHREAD_ELISION_NEVER;
+    *elision = PTHREAD_ELISION_NEVER_NP;
   else
-    *elision = PTHREAD_ELISION_DEFAULT;
+    *elision = PTHREAD_ELISION_DEFAULT_NP;
 
   return 0;
 }
