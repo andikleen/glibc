@@ -55,6 +55,8 @@ pthread_mutex_timedlock (mutex, abstime)
 			    PTHREAD_MUTEX_TIMED_NP))
     {
       /* Recursive mutex.  */
+    case PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_ELISION_NP:
+    case PTHREAD_MUTEX_RECURSIVE_NP|PTHREAD_MUTEX_NO_ELISION_NP:
     case PTHREAD_MUTEX_RECURSIVE_NP:
       /* Check whether we already hold the mutex.  */
       if (mutex->__data.__owner == id)

@@ -122,6 +122,7 @@ __pthread_mutex_lock (mutex)
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
       /* Recursive mutex.  */
+    recursive:
 
       /* Check whether we already hold the mutex.  */
       if (mutex->__data.__owner == id)
@@ -165,9 +166,15 @@ __pthread_mutex_lock (mutex)
       /* No owner for elision */
       return 0;
     }
+  else if (PTHREAD_MUTEX_TYPE (mutex) == PTHREAD_MUTEX_RECURSIVE_NP)
+    {
+      /* In case the user set the elision flags here. 
+         Elision not supported so far. */
+      goto recursive;
+    }
   else
     {
-      assert (type == PTHREAD_MUTEX_ERRORCHECK_NP);
+      assert (PTHREAD_MUTEX_TYPE (mutex) == PTHREAD_MUTEX_ERRORCHECK_NP);
       /* Check whether we already hold the mutex.  */
       if (__builtin_expect (mutex->__data.__owner == id, 0))
 	return EDEADLK;
