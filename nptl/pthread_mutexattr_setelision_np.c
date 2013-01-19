@@ -26,15 +26,15 @@ pthread_mutexattr_setelision_np (pthread_mutexattr_t *attr, int elision)
 
   switch (elision)
     {
-      case PTHREAD_ELISION_ALWAYS_NP:
+      case PTHREAD_ELISION_ALWAYS:
         iattr->mutexkind |= PTHREAD_MUTEX_ELISION_NP;
 	iattr->mutexkind &= ~PTHREAD_MUTEX_NO_ELISION_NP;
 	break;
-      case PTHREAD_ELISION_NEVER_NP:
+      case PTHREAD_ELISION_NEVER:
 	iattr->mutexkind |= PTHREAD_MUTEX_NO_ELISION_NP;
 	iattr->mutexkind &= ~PTHREAD_MUTEX_ELISION_NP;
 	break;
-      case PTHREAD_ELISION_DEFAULT_NP:
+      case PTHREAD_ELISION_DEFAULT:
 	iattr->mutexkind &=
 		~(PTHREAD_MUTEX_ELISION_NP|PTHREAD_MUTEX_NO_ELISION_NP);
       default:

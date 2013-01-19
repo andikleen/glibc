@@ -904,9 +904,9 @@ extern int pthread_mutexattr_setrobust_np (pthread_mutexattr_t *__attr,
 
 enum
   {
-    PTHREAD_ELISION_DEFAULT_NP,
-    PTHREAD_ELISION_ALWAYS_NP,
-    PTHREAD_ELISION_NEVER_NP
+    PTHREAD_ELISION_DEFAULT,
+    PTHREAD_ELISION_ALWAYS,
+    PTHREAD_ELISION_NEVER
   };
 
 /* Set the lock elision hint of the mutex attribute ATTR. */
