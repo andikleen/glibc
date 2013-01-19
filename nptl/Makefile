@@ -125,8 +125,7 @@ libpthread-routines = nptl-init vars events version \
 		      pthread_mutexattr_setprioceiling tpp \
 		      pthread_mutex_getprioceiling \
 		      pthread_mutex_setprioceiling \
-		      pthread_setname pthread_getname \
-		      pthread_mutexattr_setelision_np pthread_mutexattr_getelision_np \
+		      pthread_setname pthread_getname
 #		      pthread_setuid pthread_seteuid pthread_setreuid \
 #		      pthread_setresuid \
 #		      pthread_setgid pthread_setegid pthread_setregid \

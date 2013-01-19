@@ -898,28 +898,6 @@ extern int pthread_mutexattr_setrobust (pthread_mutexattr_t *__attr,
 extern int pthread_mutexattr_setrobust_np (pthread_mutexattr_t *__attr,
 					   int __robustness)
      __THROW __nonnull ((1));
-
-
-/* Get the elision flag of the mutex attribute ATTR.  */
-
-enum
-  {
-    PTHREAD_ELISION_DEFAULT,
-    PTHREAD_ELISION_ALWAYS,
-    PTHREAD_ELISION_NEVER
-  };
-
-/* Set the lock elision hint of the mutex attribute ATTR. */
-extern int pthread_mutexattr_getelision_np (const pthread_mutexattr_t *
-					    __restrict __attr,
-					    int *__restrict __elision)
-     __THROW __nonnull ((1, 2));
-
-/* Set the lock elision hint of the mutex attribute ATTR.  */
-extern int pthread_mutexattr_setelision_np (pthread_mutexattr_t *__attr,
-					 int __elision)
-     __THROW __nonnull ((1));
-
 # endif
 #endif
 
