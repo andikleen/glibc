@@ -165,25 +165,25 @@ This overrides any other defaults set by environment variables for this lock.
 
 @itemize
 @item
-PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP)
 Force lock elision for a (default) timed mutex.
 
 @item
-PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_NO_ELISION_NP)
 Force no lock elision for a (default) timed mutex.
 
 @item
-PTHREAD_ADAPTIVE_ELISION_MUTEX_INITIALIZER_NP
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_ELISION_NP)
 Force lock elision for an adaptive mutex.
 
 @item
-PTHREAD_ADAPTIVE_NO_ELISION_MUTEX_INITIALIZER_NP
+PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_NO_ELISION_NP)
 Force no lock elision for an adaptive mutex.
 @end itemize
 
 @smallexample
 /* Disable lock elision for mylock */
-pthread_mutex_t mylock = PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP;
+pthread_mutex_t mylock = PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP);
 @end smallexample
 
 The lock type can also be set at runtime using @code{pthread_mutexattr_settype} and @code{pthread_mutex_init}.
@@ -192,7 +192,7 @@ The lock type can also be set at runtime using @code{pthread_mutexattr_settype} 
 /* Force lock elision for a dynamically allocated mutex */
 pthread_mutexattr_t attr;
 pthread_mutexattr_init (&attr);
-pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_TIMED_ELISION_NP);
+pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP);
 pthread_mutex_init (&object->mylock, &attr);
 @end smallexample
 
