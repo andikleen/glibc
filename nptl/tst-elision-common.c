@@ -94,29 +94,33 @@ mutex_test (void)
 
   lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
   ret += run_mutex (ITER, "default initializer timed", 0);
-  lock = (pthread_mutex_t) PTHREAD_TIMED_ELISION_MUTEX_INITIALIZER_NP;
+  lock = (pthread_mutex_t) PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|
+						 PTHREAD_MUTEX_ELISION_NP),
   ret += run_mutex (ITER, "timed initializer elision", 1);
-  lock = (pthread_mutex_t) PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP;
+  lock = (pthread_mutex_t) PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|
+						 PTHREAD_MUTEX_NO_ELISION_NP);
   ret += run_mutex (0, "timed initializer no elision", 2);
 
   lock = (pthread_mutex_t) PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
   run_mutex (ITER, "adaptive initializer default", 0);
-  lock = (pthread_mutex_t) PTHREAD_ADAPTIVE_ELISION_MUTEX_INITIALIZER_NP;
+  lock = (pthread_mutex_t) PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|
+						 PTHREAD_MUTEX_ELISION_NP);
   ret += run_mutex (ITER, "adaptive initializer elision", 1);
-  lock = (pthread_mutex_t) PTHREAD_ADAPTIVE_NO_ELISION_MUTEX_INITIALIZER_NP;
+  lock = (pthread_mutex_t) PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|
+						 PTHREAD_MUTEX_NO_ELISION_NP);
   ret += run_mutex (0, "adaptive initializer no elision", 2);
 
   ret += run_mutex_init (ITER, "timed init default", 0, 0, 0);
   ret += run_mutex_init (ITER, "timed init elision",
-                         PTHREAD_MUTEX_TIMED_ELISION_NP, 1, 1);
+                         PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP, 1, 1);
   ret += run_mutex_init (0, "timed init no elision",
-			 PTHREAD_MUTEX_TIMED_NO_ELISION_NP, 1, 2);
+			 PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_NO_ELISION_NP, 1, 2);
 
   ret += run_mutex_init (ITER, "adaptive init default", 0, 0, 0);
   ret += run_mutex_init (ITER, "adaptive init elision",
-                         PTHREAD_MUTEX_ADAPTIVE_ELISION_NP, 1, 1);
+                         PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_ELISION_NP, 1, 1);
   ret += run_mutex_init (0, "adaptive init no elision",
-		         PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP,
+		         PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_NO_ELISION_NP,
 			  1, 2);
 
   return ret;

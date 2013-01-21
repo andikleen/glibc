@@ -22,21 +22,29 @@
 
 /* Test initializers for elided locks */
 
-pthread_mutex_t mtx_timed_elision = PTHREAD_TIMED_ELISION_MUTEX_INITIALIZER_NP;
-pthread_mutex_t mtx_timed_no_elision = PTHREAD_TIMED_NO_ELISION_MUTEX_INITIALIZER_NP;
-pthread_mutex_t mtx_adaptive_elision = PTHREAD_ADAPTIVE_ELISION_MUTEX_INITIALIZER_NP;
-pthread_mutex_t mtx_adaptive_no_elision = PTHREAD_ADAPTIVE_NO_ELISION_MUTEX_INITIALIZER_NP;
+pthread_mutex_t mtx_timed_elision = PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|
+							  PTHREAD_MUTEX_ELISION_NP);
+pthread_mutex_t mtx_timed_no_elision = PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_TIMED_NP|
+							     PTHREAD_MUTEX_NO_ELISION_NP);
+pthread_mutex_t mtx_adaptive_elision = PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|
+							     PTHREAD_MUTEX_ELISION_NP);
+pthread_mutex_t mtx_adaptive_no_elision = PTHREAD_MUTEX_INIT_NP(PTHREAD_MUTEX_ADAPTIVE_NP|
+								PTHREAD_MUTEX_NO_ELISION_NP);
 
 int
 main (void)
 {
-  if (mtx_timed_elision.__data.__kind != PTHREAD_MUTEX_TIMED_ELISION_NP)
+  if (mtx_timed_elision.__data.__kind !=
+      (PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_NP))
     return 1;
-  if (mtx_timed_no_elision.__data.__kind != PTHREAD_MUTEX_TIMED_NO_ELISION_NP)
+  if (mtx_timed_no_elision.__data.__kind !=
+      (PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_NO_ELISION_NP))
     return 2;
-  if (mtx_adaptive_elision.__data.__kind != PTHREAD_MUTEX_ADAPTIVE_ELISION_NP)
+  if (mtx_adaptive_elision.__data.__kind !=
+      (PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_ELISION_NP))
     return 3;
-  if (mtx_adaptive_no_elision.__data.__kind != PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP)
+  if (mtx_adaptive_no_elision.__data.__kind !=
+      (PTHREAD_MUTEX_ADAPTIVE_NP|PTHREAD_MUTEX_NO_ELISION_NP))
     return 4;
   return 0;
 }
