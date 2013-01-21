@@ -253,7 +253,7 @@ libpthread {
   };
 
   GLIBC_2.18 {
-    __pthread_set_abort_hook;
+    __pthread_set_elision_abort_hook;
   };
 
   GLIBC_PRIVATE {
