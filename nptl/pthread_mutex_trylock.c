@@ -30,6 +30,10 @@
 #define ENABLE_ELISION 0
 #endif
 
+#ifndef DO_ELISION
+#define DO_ELISION(m) 0
+#endif
+
 /* We don't force elision in trylock, because this can lead to inconsistent
    lock state if the lock was actually busy. */
 
@@ -71,6 +75,7 @@ __pthread_mutex_trylock (mutex)
 
     case PTHREAD_MUTEX_TIMED_ELISION_NP:
     case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
+    elision:
       if (!ENABLE_ELISION)
 	goto normal;
       if (lll_trylock_elision (mutex->__data.__lock,
@@ -83,14 +88,16 @@ __pthread_mutex_trylock (mutex)
 
     case PTHREAD_MUTEX_TIMED_NP:
     case PTHREAD_MUTEX_ADAPTIVE_NP:
+      if (DO_ELISION (mutex))
+	goto elision;
+      /*FALL THROUGH*/
     case PTHREAD_MUTEX_ADAPTIVE_NO_ELISION_NP:
       /*FALL THROUGH*/
     case PTHREAD_MUTEX_TIMED_NO_ELISION_NP:
     case PTHREAD_MUTEX_ERRORCHECK_NP:
     normal:
-      /* Normal mutex.  */
-        if (lll_trylock (mutex->__data.__lock) != 0)
-	  break;
+      if (lll_trylock (mutex->__data.__lock) != 0)
+	break;
 
       /* Record the ownership.  */
       mutex->__data.__owner = id;
