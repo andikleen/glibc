@@ -242,6 +242,12 @@ How often to not attempt a transaction after an internal abort is seen.
 @item    
 retry_try_xbegin
 How often to retry the transaction on external aborts.
+
+@item
+retry_trylock_internal_abort
+How often to retry the transaction on internal aborts during trylock.
+This setting is also used for adaptive locks.
+
 @end itemize
 
 @node Setting elision for individual @code{pthread_rwlock_t}
