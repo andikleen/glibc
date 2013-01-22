@@ -50,35 +50,6 @@ static const struct tune tunings[] =
 
 #define PAIR(x) x, sizeof (x)-1
 
-/* It's dangerous to reference anything else here due to IFUNC requirements,
-   so we implement all the string functions we need ourself. */
-
-static int
-simple_strncmp (const char *a, const char *b, int len)
-{
-  int i;
-  for (i = 0; i < len; i++)
-    {
-      if (*a != *b)
-        return *a - *b;
-      if (*a++ == 0 || *b++ == 0)
-        break;
-    }
-  return 0;
-}
-
-static int
-simple_strtou (const char *s, char **end)
-{
-  unsigned num = 0;
-
-  while (*s >= '0' && *s <= '9')
-    num = (num * 10) + *s++ - '0';
-  if (end)
-    *(const char **)end = s;
-  return num;
-}
-
 static void
 complain (const char *msg, int len)
 {
@@ -97,28 +68,41 @@ elision_aconf_setup(const char *s)
 	{
 	  int nlen = tunings[i].len;
 
-	  if (!simple_strncmp (tunings[i].name, s, nlen) && s[nlen] == ':')
+	  if (!strncmp (tunings[i].name, s, nlen))
 	    {
 	      char *end;
 	      int val;
 
+	      if (s[nlen] != '=')
+		{
+  		  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: missing =\n"));
+	 	  return;
+		}
 	      s += nlen + 1;
-	      val = simple_strtou (s, &end);
+	      val = strtoul (s, &end, 0);
 	      if (end == s)
-		goto error;
+		{
+  		  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: missing number\n"));
+	 	  return;
+		}
 	      *(int *)(((char *)&__elision_aconf) + tunings[i].offset) = val;
 	      s = end;
-	      if (*s == ',')
+	      if (*s == ',' || *s == ':')
 		s++;
 	      else if (*s)
-		goto error;
+		{
+  		  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: garbage after number\n"));
+	 	  return;
+		}
+	      break;
 	    }
 	}
+      if (!tunings[i].name)
+      	{
+  	  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: unknown tunable\n"));
+ 	  return;
+	}
     }
-  return;
-
- error:
-  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax\n"));
 }
 
 int __rwlock_rtm_enabled attribute_hidden;
@@ -151,7 +135,7 @@ next_env_entry (char first, char ***position)
 static inline void
 match (const char *line, const char *var, int len, const char **res)
 {
-  if (!simple_strncmp (line, var, len))
+  if (!strncmp (line, var, len))
     *res = line + len;
 }
 
@@ -160,19 +144,19 @@ elision_mutex_init (const char *s)
 {
   if (!s)
     return;
-  if (!simple_strncmp (s, "adaptive", 8) && (s[8] == 0 || s[8] == ':'))
+  if (!strncmp (s, "adaptive", 8) && (s[8] == 0 || s[8] == ':'))
     {
       __pthread_force_elision = __elision_available;
       if (s[8] == ':')
 	elision_aconf_setup (s + 9);
     }
-  else if (!simple_strncmp (s, "elision", 7) && (s[7] == 0 || s[7] == ':'))
+  else if (!strncmp (s, "elision", 7) && (s[7] == 0 || s[7] == ':'))
     {
       __pthread_force_elision = __elision_available;
       if (s[7] == ':')
         elision_aconf_setup (s + 8);
     }
-  else if (!simple_strncmp (s, "none", 4) && s[4] == 0)
+  else if (!strncmp (s, "none", 4) && s[4] == 0)
     __pthread_force_elision = 0;
   else
     complain (PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));
@@ -186,7 +170,7 @@ elision_rwlock_init (const char *s)
       __rwlock_rtm_enabled = __elision_available;
       return;
     }
-  if (!simple_strncmp (s, "elision", 7))
+  if (!strncmp (s, "elision", 7))
     {
       __rwlock_rtm_enabled = __elision_available;
       if (s[7] == ':')
@@ -194,14 +178,14 @@ elision_rwlock_init (const char *s)
           char *end;
 	  int n;
 
-          n = simple_strtou (s + 8, &end);
+          n = strtoul (s + 8, &end, 0);
 	  if (end == s + 8)
 	    complain (PAIR("pthreads: Bad retry number for PTHREAD_RWLOCK\n"));
           else
 	    __rwlock_rtm_read_retries = n;
 	}
     }
-  else if (!simple_strncmp(s, "none", 4) && s[4] == 0)
+  else if (!strncmp(s, "none", 4) && s[4] == 0)
     __rwlock_rtm_enabled = 0;
   else
     complain (PAIR("pthreads: Unknown setting for PTHREAD_RWLOCK\n"));
