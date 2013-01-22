@@ -62,7 +62,11 @@ Elided locks always behave like read-write locks.
 
 @item
 Mutexes and write rwlocks can be locked recursively inside the lock region. 
-This behavior is visible through @code{pthread_mutex_trylock}:
+This behavior is visible through @code{pthread_mutex_trylock}. This 
+behavior is not enabled by default for default timed locks, only
+for locks that have been explicitely marked for elision with
+@code{PTHREAD_MUTEX_ELISION_NP}. The default locks will abort
+elision for nested trylocks.
 
 @smallexample
 pthread_mutex_lock (&lock);
@@ -72,7 +76,8 @@ else
       /* with no elision we always come here */
 @end smallexample
 
-And also through @code{pthread_mutex_timedlock}:
+And also through @code{pthread_mutex_timedlock}. This behavior is unconditional
+for elided locks.
 
 @smallexample
 pthread_mutex_lock (&lock);
@@ -196,6 +201,7 @@ pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_TIMED_NP|PTHREAD_MUTEX_ELISION_N
 pthread_mutex_init (&object->mylock, &attr);
 @end smallexample
 
+@code{pthread_mutex_gettype} will return additional flags too.
 
 @node Setting @code{pthread_mutex_t} elision using environment variables
 @section Setting @code{pthread_mutex_t} elision using environment variables
