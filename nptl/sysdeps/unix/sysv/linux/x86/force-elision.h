@@ -4,6 +4,7 @@
       && (m->__data.__kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0	\
       && __is_smp)							\
     {									\
-      mutex->__data.__kind |= PTHREAD_MUTEX_ELISION_NP;			\
+      mutex->__data.__kind |= PTHREAD_MUTEX_ELISION_NP			\
+	    | PTHREAD_MUTEX_UPGRADED_ELISION_NP;			\
       s;								\
     }

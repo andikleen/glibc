@@ -29,6 +29,10 @@
 #define lll_timedlock_elision(a,dummy,b,c) lll_timedlock(a, b, c)
 #endif
 
+#ifndef lll_trylock_elision
+#define lll_trylock_elision(a,t,u) lll_trylock(a)
+#endif
+
 #ifndef ENABLE_ELISION
 #define ENABLE_ELISION 0
 #endif
@@ -113,7 +117,7 @@ pthread_mutex_timedlock (mutex, abstime)
     case PTHREAD_MUTEX_ADAPTIVE_ELISION_NP:
     adaptive_elision: __attribute__((unused))
       if (ENABLE_ELISION
-	  && !lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision))
+	  && !lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision, 0))
         return 0;
       goto adaptive;
 

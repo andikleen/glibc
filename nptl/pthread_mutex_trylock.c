@@ -23,7 +23,7 @@
 #include <lowlevellock.h>
 
 #ifndef lll_trylock_elision
-#define lll_trylock_elision(a,t) lll_trylock(a)
+#define lll_trylock_elision(a,t,u) lll_trylock(a)
 #endif
 
 #ifndef ENABLE_ELISION
@@ -74,7 +74,9 @@ __pthread_mutex_trylock (mutex)
       if (!ENABLE_ELISION)
 	goto normal;
       if (lll_trylock_elision (mutex->__data.__lock,
-			       mutex->__data.__elision) != 0)
+			       mutex->__data.__elision,
+			       mutex->__data.__kind
+			       	& PTHREAD_MUTEX_UPGRADED_ELISION_NP) != 0)
         break;
       /* Don't record the ownership. */
       return 0;

@@ -30,6 +30,10 @@
       lll_lock (lock, private); 0; })
 #endif
 
+#ifndef lll_trylock_elision
+#define lll_trylock_elision(a,t,u) lll_trylock(a)
+#endif
+
 #ifndef LLL_MUTEX_LOCK
 # define LLL_MUTEX_LOCK(mutex) \
   lll_lock ((mutex)->__data.__lock, PTHREAD_MUTEX_PSHARED (mutex))
@@ -160,7 +164,7 @@ __pthread_mutex_lock (mutex)
   elision_adaptive: __attribute__((unused))
       if (!ENABLE_ELISION)
 	goto adaptive;
-      if (!lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision))
+      if (!lll_trylock_elision (mutex->__data.__lock, mutex->__data.__elision, 0))
         return 0;
       adaptive_lock (mutex);
       /* No owner for elision */
