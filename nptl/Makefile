@@ -460,6 +460,8 @@ tst-mutex8-static-ENV = PTHREAD_MUTEX=none
 tst-mutex8f-ENV = PTHREAD_MUTEX=none
 tst-mutex8g-ENV = PTHREAD_MUTEX=elision
 tst-elision1b-ENV = PTHREAD_MUTEX=none PTHREAD_RWLOCK=none
+# disable adaptation for abort hook test
+tst-elision2-ENV = PTHREAD_MUTEX=elision:retry_lock_internal_abort=0:retry_trylock_internal_abort=0
 
 $(objpfx)tst-atfork2: $(libdl) $(shared-thread-library)
 LDFLAGS-tst-atfork2 = -rdynamic

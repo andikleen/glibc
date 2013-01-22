@@ -39,12 +39,14 @@ cpu_has_rtm (void)
 
 pthread_mutex_t lock;
 
+#ifndef TRYLOCK_ONLY
 static int
 pthread_mutex_timedlock_wrapper(pthread_mutex_t *l)
 {
   struct timespec wait = { 0, 0 };
   return pthread_mutex_timedlock (l, &wait);
 }
+#endif
 
 /* Note this test program will fail when single stepped.
    It also assumes that simple transactions always work. There is no
@@ -60,9 +62,13 @@ run_mutex (int expected, const char *name, int force)
   int txn __attribute__((unused));
   int err;
 
+#ifndef TRYLOCK_ONLY
   TESTLOCK(lock, pthread_mutex_lock, pthread_mutex_unlock, force);
-  TESTLOCK(lock, pthread_mutex_trylock, pthread_mutex_unlock, force);
   TESTLOCK(lock, pthread_mutex_timedlock_wrapper, pthread_mutex_unlock, force);
+  TESTLOCK(lock, pthread_mutex_trylock, pthread_mutex_unlock, force);
+#else
+  TESTTRYLOCK(lock, pthread_mutex_lock, pthread_mutex_trylock, pthread_mutex_unlock, force);
+#endif
 
   err = pthread_mutex_destroy (&lock);
   if (err != 0)
@@ -128,6 +134,7 @@ mutex_test (void)
 
 pthread_rwlock_t rwlock;
 
+#ifndef TRYLOCK_ONLY
 static int
 pthread_rwlock_timedwrlock_wrapper(pthread_rwlock_t *l)
 {
@@ -141,6 +148,7 @@ pthread_rwlock_timedrdlock_wrapper(pthread_rwlock_t *l)
   struct timespec wait = { 0, 0 };
   return pthread_rwlock_timedrdlock (l, &wait);
 }
+#endif
 
 int
 run_rwlock (int expected, const char *name, int force)
@@ -150,6 +158,7 @@ run_rwlock (int expected, const char *name, int force)
   int txn __attribute__((unused));
   int err;
 
+#ifndef TRYLOCK_ONLY
   TESTLOCK(rwlock, pthread_rwlock_rdlock, pthread_rwlock_unlock, force);
   TESTLOCK(rwlock, pthread_rwlock_wrlock, pthread_rwlock_unlock, force);
   TESTLOCK(rwlock, pthread_rwlock_rdlock, pthread_rwlock_unlock, force);
@@ -159,6 +168,10 @@ run_rwlock (int expected, const char *name, int force)
 	   pthread_rwlock_unlock, force);
   TESTLOCK(rwlock, pthread_rwlock_timedwrlock_wrapper,
 	   pthread_rwlock_unlock, force);
+#else
+  TESTTRYLOCK(rwlock, pthread_rwlock_wrlock, pthread_rwlock_trywrlock,
+	      pthread_rwlock_unlock, force);
+#endif
 
   err = pthread_rwlock_destroy (&rwlock);
   if (err != 0)

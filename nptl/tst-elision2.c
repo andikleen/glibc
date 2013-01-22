@@ -1,5 +1,5 @@
 /* tst-elision2: Test TSX abort hook.
-   Copyright (C) 2012 Free Software Foundation, Inc.
+   Copyright (C) 2013 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,11 +16,13 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#if (defined(__i386__) || defined(__x86_64__)) && defined(SUPPORTS_ABORT_HOOK)
+#if defined(__i386__) || defined(__x86_64__)
 #include <pthread.h>
 #include <stdio.h>
 #include <hle.h>
+#include <cpuid.h>
 
+FILE *null;
 int abort_count;
 
 void do_abort(unsigned code)
@@ -28,13 +30,14 @@ void do_abort(unsigned code)
   abort_count++;
 
   /* Do something here that clobbers registers */
-  printf ("abort %x\n", code);
+  fprintf (null, "abort %x %d\n", code, abort_count);
 }
 
 #define TESTLOCK(l, lock, unlock, force)	\
    do					\
     {					\
       abort_count = 0;			\
+      fprintf (null, "start %s %s\n", #lock, name); \ 
       for (i = 0; i < ITER; i++)	\
 	{				\
 	  lock (&l);			\
@@ -43,10 +46,10 @@ void do_abort(unsigned code)
 	}				\
     }					\
   while (try++ < MAXTRY && abort_count != ITER);\
-  if (try == MAXTRY && force != 2)	\
-    {					\
-      printf ("%s %s abort hook did not work\n", name, #lock); \
-      return 1;				\
+  if (abort_count != ITER && force != 2)	\
+    {						\
+      printf ("%s %s abort hook did not work %d\n", name, #lock, abort_count); \
+      return 1;					\
     }
 
 #include "tst-elision-common.c"
@@ -60,7 +63,11 @@ do_test (void)
       return 0;
     }
 
-  __pthread_set_abort_hook (do_abort);
+  null = fopen ("/dev/null", "w");
+  if (!null)
+    null = stdout;
+
+  __pthread_set_elision_abort_hook (do_abort);
 
   if (mutex_test ())
     return 1;
