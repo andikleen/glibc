@@ -61,22 +61,22 @@ __lll_lock_elision (int *futex, short *try_lock, EXTRAARG int private)
 		 Could also _xend here but xabort with 0xff code
 		 is more visible in the profiler. */
 	      _xabort (0xff);
-
-	      if (*try_lock != aconf.retry_lock_busy)
-		*try_lock = aconf.retry_lock_busy;
-	      break;
 	    }
-
 
 	  if (__tsx_abort_hook)
 	    __tsx_abort_hook(status);
 
 	  if (!(status & _XABORT_RETRY))
 	    {
+	      if ((status & _XABORT_EXPLICIT) && _XABORT_CODE (status) == 0xff)
+	        {
+		  if (*try_lock != aconf.retry_lock_busy)
+		    *try_lock = aconf.retry_lock_busy;
+		}
 	      /* Internal abort. There is no chance for retry.
 		 Use the normal locking and next time use lock.
 		 Be careful to avoid writing to the lock. */
-	      if (*try_lock != aconf.retry_lock_internal_abort)
+	      else if (*try_lock != aconf.retry_lock_internal_abort)
 		*try_lock = aconf.retry_lock_internal_abort;
 	      break;
 	    }
