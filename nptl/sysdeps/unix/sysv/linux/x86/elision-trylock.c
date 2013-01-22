@@ -23,13 +23,23 @@
 
 #define aconf __elision_aconf
 
+/* Try to elide a futex trylock. FUTEX is the futex variable. TRY_LOCK is the
+   adaptation counter in the mutex. UPGRADED is != 0 when this is for an
+   automatically upgraded lock.  */
+
 int
-__lll_trylock_elision (int *futex, short *try_lock)
+__lll_trylock_elision (int *futex, short *try_lock, int upgraded)
 {
   /* Only try a transaction if it's worth it */
   if (*try_lock <= 0)
     {
       unsigned status;
+
+      /* When this could be a nested trylock that is not explicitely
+	 declared an elided lock abort. This makes us follow POSIX
+	 paper semantics. */
+      if (upgraded)
+        _xabort (0xfd);
 
       if ((status = _xbegin()) == _XBEGIN_STARTED)
 	{
@@ -41,7 +51,6 @@ __lll_trylock_elision (int *futex, short *try_lock)
 	     is more visible in the profiler. */
 	  _xabort (0xff);
 	}
-
 
       if (__tsx_abort_hook)
 	__tsx_abort_hook (status);
