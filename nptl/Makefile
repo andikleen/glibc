@@ -270,7 +270,7 @@ tests = tst-typesizes \
 	tst-getpid1 tst-getpid2 tst-getpid3 \
 	tst-initializers1 $(patsubst %,tst-initializers1-%,c89 gnu89 c99 gnu99) \
 	tst-initializers2 $(patsubst %,tst-initializers2-%,c89 gnu89 c99 gnu99) \
-	tst-elision1 tst-elision1b tst-elision2
+	tst-elision1 tst-elision1b tst-elision2 tst-elision3
 xtests = tst-setuid1 tst-setuid1-static tst-mutexpp1 tst-mutexpp6 tst-mutexpp10
 test-srcs = tst-oddstacklimit
 
