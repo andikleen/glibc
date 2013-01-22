@@ -29,9 +29,14 @@ int
 __pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
 {
   unsigned status;
+  int elision = 0;
 
-  if ((rwlock->__data.__eliding > 0 && __elision_available)
-      || (rwlock->__data.__eliding == 0 && __rwlock_rtm_enabled))
+  if (rwlock->__data.__eliding == 0 && __rwlock_rtm_enabled)
+    {
+      _xabort (0xfd);
+      elision = 1;
+    }
+  if (elision || (rwlock->__data.__eliding > 0 && __elision_available))
     {
       if ((status = _xbegin()) == _XBEGIN_STARTED)
 	{
