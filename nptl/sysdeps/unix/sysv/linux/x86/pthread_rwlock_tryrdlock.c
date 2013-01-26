@@ -41,7 +41,7 @@ __pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
 	  /* Lock was busy. Fall back to normal locking.
 	     Could also _xend here but xabort with 0xff code
 	     is more visible in the profiler. */
-	  _xabort (0xff);
+	  _xabort (_ABORT_LOCK_BUSY);
 	}
       /* Aborts come here */
       if (__tsx_abort_hook)

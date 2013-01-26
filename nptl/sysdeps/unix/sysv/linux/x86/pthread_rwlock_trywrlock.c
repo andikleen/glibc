@@ -33,7 +33,7 @@ __pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
 
   if (rwlock->__data.__eliding == 0 && __rwlock_rtm_enabled)
     {
-      _xabort (0xfd);
+      _xabort (_ABORT_NESTED_TRYLOCK);
       elision = 1;
     }
   if (elision || (rwlock->__data.__eliding > 0 && __elision_available))
@@ -46,7 +46,7 @@ __pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
 	  /* Lock was busy. Fall back to normal locking.
 	     Could also _xend here but xabort with 0xff code
 	     is more visible in the profiler. */
-	  _xabort (0xff);
+	  _xabort (_ABORT_LOCK_BUSY);
 	}
       if (__tsx_abort_hook)
 	__tsx_abort_hook (status);
