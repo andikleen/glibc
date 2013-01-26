@@ -60,7 +60,7 @@ __lll_lock_elision (int *futex, short *try_lock, EXTRAARG int private)
 	      /* Lock was busy. Fall back to normal locking.
 		 Could also _xend here but xabort with 0xff code
 		 is more visible in the profiler. */
-	      _xabort (0xff);
+	      _xabort (_ABORT_LOCK_BUSY);
 	    }
 
 	  if (__tsx_abort_hook)

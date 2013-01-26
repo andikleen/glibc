@@ -39,7 +39,7 @@ __lll_trylock_elision (int *futex, short *try_lock, int upgraded)
 	 declared an elided lock abort. This makes us follow POSIX
 	 paper semantics. */
       if (upgraded)
-        _xabort (0xfd);
+        _xabort (_ABORT_NESTED_TRYLOCK);
 
       if ((status = _xbegin()) == _XBEGIN_STARTED)
 	{
@@ -49,7 +49,7 @@ __lll_trylock_elision (int *futex, short *try_lock, int upgraded)
 	  /* Lock was busy. Fall back to normal locking.
 	     Could also _xend here but xabort with 0xff code
 	     is more visible in the profiler. */
-	  _xabort (0xff);
+	  _xabort (_ABORT_LOCK_BUSY);
 	}
 
       if (__tsx_abort_hook)
