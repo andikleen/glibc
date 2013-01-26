@@ -39,6 +39,10 @@
 #define _XABORT_NESTED		(1 << 5)
 #define _XABORT_CODE(x)		(((x) >> 24) & 0xff)
 
+#define _ABORT_LOCK_BUSY 	0xff
+#define _ABORT_LOCK_IS_LOCKED	0xfe
+#define _ABORT_NESTED_TRYLOCK	0xfd
+
 #ifndef __ASSEMBLER__
 
 #define __force_inline __attribute__((__always_inline__)) inline
