@@ -52,10 +52,6 @@ I cannot post performance numbers at this point.
 The user can also tune this by setting the mutex type and environment
 variables.
 
-The lock transactions have a abort hook mechanism to hook into the abort
-path. This is quite useful for some debugging, so I kept this
-functionality.
-
 The mutexes can be configured at runtime with the PTHREAD_MUTEX
 environment variable.  This will force a specific lock type for all
 mutexes in the program that do not have another type set explicitly.
