@@ -1,5 +1,5 @@
 #include <time.h>
-#include "elision-conf.h"
+#include <elision-conf.h>
 #include "lowlevellock.h"
 #define __lll_lock_elision __lll_timedlock_elision
 #define EXTRAARG const struct timespec *t,

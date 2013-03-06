@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <init-arch.h>
-#include "elision-conf.h"
+#include <elision-conf.h>
 
 struct elision_config __elision_aconf =
   {

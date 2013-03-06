@@ -19,7 +19,7 @@
 #include <pthreadP.h>
 #include <lowlevellock.h>
 #include "hle.h"
-#include "elision-conf.h"
+#include <elision-conf.h>
 
 #define aconf __elision_aconf
 

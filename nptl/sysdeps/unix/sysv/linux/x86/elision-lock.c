@@ -19,7 +19,7 @@
 #include "pthreadP.h"
 #include "lowlevellock.h"
 #include "hle.h"
-#include "elision-conf.h"
+#include <elision-conf.h>
 
 #if !defined(LLL_LOCK) && !defined(EXTRAARG)
 /* Make sure the configuration code is always linked in for static

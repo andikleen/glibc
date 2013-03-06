@@ -18,7 +18,7 @@
 #include <pthread.h>
 #include <pthreadP.h>
 #include <hle.h>
-#include "elision-conf.h"
+#include <elision-conf.h>
 #include "init-arch.h"
 
 #define __pthread_rwlock_tryrdlock __full_pthread_rwlock_tryrdlock
