@@ -75,14 +75,14 @@ elision_aconf_setup(const char *s)
 
 	      if (s[nlen] != '=')
 		{
-  		  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: missing =\n"));
+  		  complain (PAIR("pthreads: invalid GLIBC_MUTEX syntax: missing =\n"));
 	 	  return;
 		}
 	      s += nlen + 1;
 	      val = strtoul (s, &end, 0);
 	      if (end == s)
 		{
-  		  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: missing number\n"));
+  		  complain (PAIR("pthreads: invalid GLIBC_MUTEX syntax: missing number\n"));
 	 	  return;
 		}
 	      *(int *)(((char *)&__elision_aconf) + tunings[i].offset) = val;
@@ -159,7 +159,7 @@ elision_mutex_init (const char *s)
   else if (!strncmp (s, "none", 4) && s[4] == 0)
     __pthread_force_elision = 0;
   else
-    complain (PAIR("pthreads: Unknown setting for PTHREAD_MUTEX\n"));
+    complain (PAIR("pthreads: Unknown setting for GLIBC_MUTEX\n"));
 }
 
 static void
@@ -180,7 +180,7 @@ elision_rwlock_init (const char *s)
 
           n = strtoul (s + 8, &end, 0);
 	  if (end == s + 8)
-	    complain (PAIR("pthreads: Bad retry number for PTHREAD_RWLOCK\n"));
+	    complain (PAIR("pthreads: Bad retry number for GLIBC_RWLOCK\n"));
           else
 	    __rwlock_rtm_read_retries = n;
 	}
@@ -188,7 +188,7 @@ elision_rwlock_init (const char *s)
   else if (!strncmp(s, "none", 4) && s[4] == 0)
     __rwlock_rtm_enabled = 0;
   else
-    complain (PAIR("pthreads: Unknown setting for PTHREAD_RWLOCK\n"));
+    complain (PAIR("pthreads: Unknown setting for GLIBC_RWLOCK\n"));
 }
 
 static void
@@ -204,8 +204,8 @@ elision_init (int argc __attribute__ ((unused)),
 
   while ((envline = next_env_entry ('P', &environ)) != NULL)
     {
-      match (envline, PAIR("PTHREAD_MUTEX="), &mutex);
-      match (envline, PAIR("PTHREAD_RWLOCK="), &rwlock);
+      match (envline, PAIR("GLIBC_MUTEX="), &mutex);
+      match (envline, PAIR("GLIBC_RWLOCK="), &rwlock);
     }
 
   elision_mutex_init (mutex);
