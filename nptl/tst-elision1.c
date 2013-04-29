@@ -87,13 +87,13 @@ do_test (void)
       return 0;
     }
 
-  char *s = getenv ("PTHREAD_MUTEX");
+  char *s = getenv ("GLIBC_MUTEX");
   if (s)
     {
       char *o = getenv ("PTHREAD_RWLOCK");
       if (!o || strcmp (o, s))
         {
-          puts("PTHREAD_MUTEX and PTHREAD_RWLOCK must match for test!\n");
+          puts("GLIBC_MUTEX and GLIBC_RWLOCK must match for test!\n");
           return 1;
 	}
       if (!strcmp (s, "none"))
