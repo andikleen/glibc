@@ -90,7 +90,7 @@ do_test (void)
   char *s = getenv ("GLIBC_MUTEX");
   if (s)
     {
-      char *o = getenv ("PTHREAD_RWLOCK");
+      char *o = getenv ("GLIBC_RWLOCK");
       if (!o || strcmp (o, s))
         {
           puts("GLIBC_MUTEX and GLIBC_RWLOCK must match for test!\n");
