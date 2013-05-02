@@ -13,6 +13,7 @@ AUTHORS
 copyr-*
 copying.*
 glibc-*
+!glibc-var.h
 
 configparms
 
