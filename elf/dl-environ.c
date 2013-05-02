@@ -22,10 +22,10 @@
 #include <ldsodefs.h>
 
 /* Walk through the environment of the process and return all entries
-   starting with `LD_'.  */
+   starting with `LD_' or 'GLIBC_'.  */
 char *
 internal_function
-_dl_next_ld_env_entry (char ***position)
+_dl_next_ld_env_entry (char ***position, char *first)
 {
   char **current = *position;
   char *result = NULL;
@@ -35,7 +35,22 @@ _dl_next_ld_env_entry (char ***position)
       if (__builtin_expect ((*current)[0] == 'L', 0)
 	  && (*current)[1] == 'D' && (*current)[2] == '_')
 	{
+	  *first = (*current)[0];
 	  result = &(*current)[3];
+
+	  /* Save current position for next visit.  */
+	  *position = ++current;
+
+	  break;
+	}
+
+      if (__builtin_expect ((*current)[0] == 'G', 0)
+	  && (*current)[1] == 'L' && (*current)[2] == 'I'
+	  && (*current)[3] == 'B' && (*current)[4] == 'C'
+	  && (*current)[5] == '_')
+	{
+	  *first = (*current)[0];
+	  result = &(*current)[6];
 
 	  /* Save current position for next visit.  */
 	  *position = ++current;

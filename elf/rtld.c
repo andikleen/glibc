@@ -41,6 +41,7 @@
 #include <tls.h>
 #include <stap-probe.h>
 #include <stackinfo.h>
+#include <glibc-var.h>
 
 #include <assert.h>
 
@@ -2338,7 +2339,9 @@ process_dl_audit (char *str)
 
 /* Process all environments variables the dynamic linker must recognize.
    Since all of them start with `LD_' we are a bit smarter while finding
-   all the entries.  */
+   all the entries.  In addition we also save a bunch of GLIBC_ variables
+   used by other parts of glibc, so that each startup only has to walk the
+   environment once.  */
 extern char **_environ attribute_hidden;
 
 
@@ -2349,12 +2352,13 @@ process_envvars (enum mode *modep)
   char *envline;
   enum mode mode = normal;
   char *debug_output = NULL;
+  char first;
 
   /* This is the default place for profiling data file.  */
   GLRO(dl_profile_output)
     = &"/var/tmp\0/var/profile"[__libc_enable_secure ? 9 : 0];
 
-  while ((envline = _dl_next_ld_env_entry (&runp)) != NULL)
+  while ((envline = _dl_next_ld_env_entry (&runp, &first)) != NULL)
     {
       size_t len = 0;
 
@@ -2366,6 +2370,15 @@ process_envvars (enum mode *modep)
 	   a '=' character.  Ignore it since otherwise we will access
 	   invalid memory below.  */
 	continue;
+
+      /* Must be for GLIBC_ */
+      if (first == 'G')
+	{
+	  __record_glibc_var (envline, len, envline + len + 1);
+	  continue;
+	}
+
+      /* Must be for LD_ */
 
       switch (len)
 	{
