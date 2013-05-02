@@ -885,7 +885,7 @@ extern void _dl_show_auxv (void) internal_function;
 
 /* Return all environment variables starting with `LD_', one after the
    other.  */
-extern char *_dl_next_ld_env_entry (char ***position) internal_function;
+extern char *_dl_next_ld_env_entry (char ***position, char *first) internal_function;
 
 /* Return an array with the names of the important hardware capabilities.  */
 extern const struct r_strlenpair *_dl_important_hwcaps (const char *platform,

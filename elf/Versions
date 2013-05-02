@@ -62,5 +62,7 @@ ld {
     _dl_debug_state;
     # Pointer protection.
     __pointer_chk_guard;
+    _dl_glibc_var;
+    __glibc_var_init;
   }
 }
