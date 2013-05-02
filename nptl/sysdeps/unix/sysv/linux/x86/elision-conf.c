@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <init-arch.h>
 #include <elision-conf.h>
+#include <glibc-var.h>
 
 struct elision_config __elision_aconf =
   {
@@ -75,14 +76,14 @@ elision_aconf_setup(const char *s)
 
 	      if (s[nlen] != '=')
 		{
-  		  complain (PAIR("pthreads: invalid GLIBC_MUTEX syntax: missing =\n"));
+  		  complain (PAIR ("pthreads: invalid GLIBC_MUTEX syntax: missing =\n"));
 	 	  return;
 		}
 	      s += nlen + 1;
 	      val = strtoul (s, &end, 0);
 	      if (end == s)
 		{
-  		  complain (PAIR("pthreads: invalid GLIBC_MUTEX syntax: missing number\n"));
+  		  complain (PAIR ("pthreads: invalid GLIBC_MUTEX syntax: missing number\n"));
 	 	  return;
 		}
 	      *(int *)(((char *)&__elision_aconf) + tunings[i].offset) = val;
@@ -91,7 +92,7 @@ elision_aconf_setup(const char *s)
 		s++;
 	      else if (*s)
 		{
-  		  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: garbage after number\n"));
+  		  complain (PAIR ("pthreads: invalid GLIBC_MUTEX syntax: garbage after number\n"));
 	 	  return;
 		}
 	      break;
@@ -99,7 +100,7 @@ elision_aconf_setup(const char *s)
 	}
       if (!tunings[i].name)
       	{
-  	  complain (PAIR("pthreads: invalid PTHREAD_MUTEX syntax: unknown tunable\n"));
+  	  complain (PAIR ("pthreads: invalid GLIBC_MUTEX syntax: unknown tunable\n"));
  	  return;
 	}
     }
@@ -111,39 +112,15 @@ int __elision_available attribute_hidden;
 
 #define PAIR(x) x, sizeof (x)-1
 
-static char *
-next_env_entry (char first, char ***position)
-{
-  char **current = *position;
-  char *result = NULL;
-
-  while (*current != NULL)
-    {
-      if ((*current)[0] == first)
-	{
-	  result = *current;
-	  *position = ++current;
-	  break;
-	}
-
-      ++current;
-    }
-
-  return result;
-}
-
-static inline void
-match (const char *line, const char *var, int len, const char **res)
-{
-  if (!strncmp (line, var, len))
-    *res = line + len;
-}
-
 static void
 elision_mutex_init (const char *s)
 {
   if (!s)
-    return;
+    {
+      __pthread_force_elision = __elision_available;
+      return;
+    }
+
   if (!strncmp (s, "adaptive", 8) && (s[8] == 0 || s[8] == ':'))
     {
       __pthread_force_elision = __elision_available;
@@ -159,7 +136,7 @@ elision_mutex_init (const char *s)
   else if (!strncmp (s, "none", 4) && s[4] == 0)
     __pthread_force_elision = 0;
   else
-    complain (PAIR("pthreads: Unknown setting for GLIBC_MUTEX\n"));
+    complain (PAIR ("pthreads: Unknown setting for GLIBC_MUTEX\n"));
 }
 
 static void
@@ -180,7 +157,7 @@ elision_rwlock_init (const char *s)
 
           n = strtoul (s + 8, &end, 0);
 	  if (end == s + 8)
-	    complain (PAIR("pthreads: Bad retry number for GLIBC_RWLOCK\n"));
+	    complain (PAIR ("pthreads: Bad retry number for GLIBC_RWLOCK\n"));
           else
 	    __rwlock_rtm_read_retries = n;
 	}
@@ -188,7 +165,7 @@ elision_rwlock_init (const char *s)
   else if (!strncmp(s, "none", 4) && s[4] == 0)
     __rwlock_rtm_enabled = 0;
   else
-    complain (PAIR("pthreads: Unknown setting for GLIBC_RWLOCK\n"));
+    complain (PAIR ("pthreads: Unknown setting for GLIBC_RWLOCK\n"));
 }
 
 static void
@@ -196,20 +173,12 @@ elision_init (int argc __attribute__ ((unused)),
 	      char **argv  __attribute__ ((unused)),
 	      char **environ)
 {
-  char *envline;
-  const char *mutex = NULL, *rwlock = NULL;
+  __elision_available = HAS_RTM;
 
-  __pthread_force_elision = 1;
-  __elision_available = 1;
-
-  while ((envline = next_env_entry ('P', &environ)) != NULL)
-    {
-      match (envline, PAIR("GLIBC_MUTEX="), &mutex);
-      match (envline, PAIR("GLIBC_RWLOCK="), &rwlock);
-    }
-
-  elision_mutex_init (mutex);
-  elision_rwlock_init (rwlock);
+  /* For static builds need to call this explicitely. Noop for dynamic */
+  __glibc_var_init (argc, argv, environ);
+  elision_mutex_init (_dl_glibc_var[GLIBC_VAR_MUTEX].val);
+  elision_rwlock_init (_dl_glibc_var[GLIBC_VAR_RWLOCK].val);
 }
 
 #ifdef SHARED
@@ -218,7 +187,7 @@ elision_init (int argc __attribute__ ((unused)),
 # define INIT_SECTION ".preinit_array"
 #endif
 
-void (*const init_array []) (int, char **, char **)
+void (*const __pthread_init_array []) (int, char **, char **)
   __attribute__ ((section (INIT_SECTION), aligned (sizeof (void *)))) =
 {
   &elision_init
