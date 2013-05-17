@@ -16,6 +16,7 @@
    License along with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>. */
 
+#include "config.h"
 #include <pthreadP.h>
 #include <sys/fcntl.h>
 #include <stdlib.h>
@@ -130,7 +131,9 @@ elision_mutex_init (const char *s)
 {
   if (s == NULL)
     {
+#ifdef ENABLE_LOCK_ELISION
       __pthread_force_elision = __elision_available;
+#endif
       return;
     }
 
@@ -159,7 +162,9 @@ elision_rwlock_init (const char *s)
 {
   if (s == NULL)
     {
+#ifdef ENABLE_LOCK_ELISION
       __rwlock_rtm_enabled = __elision_available;
+#endif
       return;
     }
   if (strncmp (s, "elision", 7) == 0)
