@@ -11,7 +11,9 @@ This chapter describes the elided lock implementation for POSIX thread locks.
 * Semantic differences of elided locks::
 * Tuning lock elision::
 * Setting elision for individual @code{pthread_mutex_t}::
+* Setting @code{pthread_mutex_t} elision using environment variables::
 * Setting elision for individual @code{pthread_rwlock_t}::
+* Setting @code{pthread_rwlock_t} elision using environment variables::
 @end menu 
 
 @node Lock elision introduction
@@ -181,6 +183,7 @@ to only write when the value changed.
 Elision can be explicitly disabled or enabled for each @code{pthread_mutex_t} in the program. 
 The elision flags can only be set at runtime using @code{pthread_mutexattr_settype} and
 @code{pthread_mutex_init}. There is no support for initializers for them.
+This overrides any other defaults set by environment variables for this lock.
 
 @smallexample
 /* Force lock elision for a mutex */
@@ -200,10 +203,73 @@ pthread_mutex_init (&object->mylock, &attr);
 
 @code{pthread_mutex_gettype} will return additional flags too.
 
+@node Setting @code{pthread_mutex_t} elision using environment variables
+@section Setting @code{pthread_mutex_t} elision using environment variables
+The elision of @code{pthread_mutex_t} mutexes can be configured at runtime with the @code{GLIBC_PTHREAD_MUTEX}
+environment variable.  This will force a specific lock type for all
+mutexes in the program that do not have another type set explicitly.
+An explicitly set lock type will override the environment variable.
+
+@smallexample
+# run myprogram with no elision
+GLIBC_PTHREAD_MUTEX=none myprogram
+@end smallexample
+
+The default depends on the @theglibc{} build configuration and whether the hardware
+supports lock elision.
+
+@itemize
+@item    
+@code{GLIBC_PTHREAD_MUTEX=elision}
+Use elided mutexes, unless explicitly disabled in the program.
+    
+@item
+@code{GLIBC_PTHREAD_MUTEX=none}
+Don't use elide mutexes, unless explicitly enabled in the program.
+
+@item
+@code{GLIBC_PTHREAD_MUTEX=no_elision}
+Don't use elide mutexes, unless explicitly enabled in the program.
+Alias for none.
+@end itemize
+
+Additional tunables can be configured through the environment variable,
+like this:
+@code{GLIBC_PTHREAD_MUTEX=adaptive:retry_lock_busy=10,retry_lock_internal_abort=20} 
+Note these parameters do not constitute an ABI and may change or disappear 
+at any time as the lock elision algorithm evolves. 
+
+Currently supported parameters are:
+    
+@itemize
+@item
+skip_lock_busy
+How often to not attempt a transaction when the lock is seen as busy.
+Expressed in number of lock attempts.
+    
+@item
+skip_lock_internal_abort
+How often to not attempt a transaction after an internal abort is seen.
+Expressed in number of lock attempts.
+
+@item    
+retry_try_xbegin
+How often to retry the transaction on external aborts.
+Expressed in number of transaction starts.
+
+@item
+skip_trylock_internal_abort
+How often to skip doing a transaction on internal aborts during trylock.
+This setting is also used for adaptive locks.
+Expressed in number of transaction starts.
+
+@end itemize
+
 @node Setting elision for individual @code{pthread_rwlock_t}
 @section Setting elision for individual @code{pthread_rwlock_t}
 
 Elision can be explicitly disabled or enabled for each @code{pthread_rwlock_t} in the program. 
+This overrides any other defaults set by environment variables for this lock.
 
 Valid flags are @code{PTHREAD_RWLOCK_ELISION_NP} to force elision and @code{PTHREAD_RWLOCK_NO_ELISION_NP}
 to disable elision. These can be ored with other rwlock types.
@@ -216,3 +282,34 @@ pthread_rwlockattr_settype (&rwattr, PTHREAD_RWLOCK_NO_ELISION_NP);
 pthread_rwlock_init (&object->myrwlock, &rwattr);
 @end smallexample
 
+@node Setting @code{pthread_rwlock_t} elision using environment variables
+@section Setting @code{pthread_rwlock_t} elision using environment variables
+The elision of @code{pthread_rwlock_t} rwlocks can be configured at
+runtime with the @code{GLIBC_PTHREAD_RWLOCK} environment variable.
+This will force a specific lock type for all
+rwlockes in the program that do not have another type set explicitly.
+An explicitly set lock type will override the environment variable.
+
+@smallexample
+# run myprogram with no elision
+GLIBC_PTHREAD_RWLOCK=none myprogram
+@end smallexample
+
+The default depends on the @theglibc{} build configuration and whether the hardware
+supports lock elision. Also suid programs don't enable elision by default, unless
+the choice is overriden.
+
+@itemize
+@item    
+@code{GLIBC_PTHREAD_RWLOCK=elision}
+Use elided rwlockes, unless explicitly disabled in the program.
+    
+@item
+@code{GLIBC_PTHREAD_RWLOCK=none}
+Don't use elided rwlocks, unless explicitly enabled in the program.
+
+@item
+@code{GLIBC_PTHREAD_RWLOCK=no_elision}
+Don't use elided rwlocks, unless explicitly enabled in the program.
+Alias for none.
+@end itemize
