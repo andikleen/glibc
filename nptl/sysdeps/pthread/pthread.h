@@ -46,6 +46,14 @@ enum
   PTHREAD_MUTEX_ERRORCHECK_NP,
   PTHREAD_MUTEX_ADAPTIVE_NP,
 
+#if defined __USE_UNIX98 || defined __USE_XOPEN2K8
+  /* Before glibc 2.18 this used to be identical to TIMED_NP.
+     Now with lock elision it's a new type that does not enable
+     elision when set by pthread_mutexattr_settype(), to satisfy
+     POSIX's deadlock requirement.  */
+  PTHREAD_MUTEX_NORMAL,
+#endif
+
   PTHREAD_MUTEX_ELISION_NP    = 1024,
   PTHREAD_MUTEX_NO_ELISION_NP = 2048,
   PTHREAD_MUTEX_UPGRADED_ELISION_NP = 4096,
@@ -53,10 +61,9 @@ enum
 
 #if defined __USE_UNIX98 || defined __USE_XOPEN2K8
   ,
-  PTHREAD_MUTEX_NORMAL = PTHREAD_MUTEX_TIMED_NP,
   PTHREAD_MUTEX_RECURSIVE = PTHREAD_MUTEX_RECURSIVE_NP,
   PTHREAD_MUTEX_ERRORCHECK = PTHREAD_MUTEX_ERRORCHECK_NP,
-  PTHREAD_MUTEX_DEFAULT = PTHREAD_MUTEX_NORMAL
+  PTHREAD_MUTEX_DEFAULT = PTHREAD_MUTEX_TIMED_NP
 #endif
 #ifdef __USE_GNU
   /* For compatibility.  */
