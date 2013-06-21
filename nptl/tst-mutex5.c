@@ -26,7 +26,7 @@
 
 
 #ifndef TYPE
-# define TYPE PTHREAD_MUTEX_NORMAL
+# define TYPE PTHREAD_MUTEX_DEFAULT
 #endif
 
 

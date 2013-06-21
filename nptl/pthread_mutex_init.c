@@ -26,8 +26,8 @@
 
 static const struct pthread_mutexattr default_mutexattr =
   {
-    /* Default is a normal mutex, not shared between processes.  */
-    .mutexkind = PTHREAD_MUTEX_NORMAL
+    /* Default is a default mutex, not shared between processes.  */
+    .mutexkind = PTHREAD_MUTEX_DEFAULT
   };
 
 
@@ -128,6 +128,26 @@ __pthread_mutex_init (mutex, mutexattr)
   if ((imutexattr->mutexkind & (PTHREAD_MUTEXATTR_FLAG_PSHARED
 				| PTHREAD_MUTEXATTR_FLAG_ROBUST)) != 0)
     mutex->__data.__kind |= PTHREAD_MUTEX_PSHARED_BIT;
+  
+  /* When a NORMAL mutex is explicitly specified, default to no elision
+     to satisfy POSIX's deadlock requirement. Also convert the NORMAL
+     type to DEFAULT, as the rest of the lock library doesn't have
+     the code paths for them.  */
+  if ((mutex->__data.__kind & PTHREAD_MUTEX_KIND_MASK_NP) 
+      == PTHREAD_MUTEX_NORMAL)
+    {
+      if ((imutexattr->mutexkind & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0)
+	mutex->__data.__kind |= PTHREAD_MUTEX_NO_ELISION_NP;
+      mutex->__data.__kind = PTHREAD_MUTEX_DEFAULT
+	| (mutex->__data.__kind & ~PTHREAD_MUTEX_KIND_MASK_NP);
+    }
+
+  /* Drop elision bits for any unusual flags, except for PSHARED.
+     These can be set implicitely now, but the other code paths don't
+     expect them for all cases.  */
+  if ((mutex->__data.__kind & 
+       (PTHREAD_MUTEXATTR_FLAG_BITS & ~PTHREAD_MUTEXATTR_FLAG_PSHARED)))
+       mutex->__data.__kind &= ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
 
   /* Default values: mutex not used yet.  */
   // mutex->__count = 0;	already done by memset
