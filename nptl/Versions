@@ -252,6 +252,13 @@ libpthread {
     pthread_setname_np; pthread_getname_np;
   };
 
+  GLIBC_2.18 {
+    /* Changed value of PTHREAD_MUTEX_NORMAL.  */
+    pthread_mutexattr_settype;
+    pthread_mutexattr_setkind_np;
+    __pthread_mutexattr_settype;
+  };
+
   GLIBC_PRIVATE {
     __pthread_initialize_minimal;
     __pthread_clock_gettime; __pthread_clock_settime;

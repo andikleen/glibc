@@ -26,8 +26,8 @@
 
 static const struct pthread_mutexattr default_mutexattr =
   {
-    /* Default is a normal mutex, not shared between processes.  */
-    .mutexkind = PTHREAD_MUTEX_NORMAL
+    /* Default is a default mutex, not shared between processes.  */
+    .mutexkind = PTHREAD_MUTEX_DEFAULT
   };
 
 
@@ -128,6 +128,13 @@ __pthread_mutex_init (mutex, mutexattr)
   if ((imutexattr->mutexkind & (PTHREAD_MUTEXATTR_FLAG_PSHARED
 				| PTHREAD_MUTEXATTR_FLAG_ROBUST)) != 0)
     mutex->__data.__kind |= PTHREAD_MUTEX_PSHARED_BIT;
+
+  /* Drop elision bits for any unusual flags, except for PSHARED.
+     These can be set implicitely now, but the other code paths don't
+     expect them for all cases.  */
+  if ((mutex->__data.__kind & 
+       (PTHREAD_MUTEXATTR_FLAG_BITS & ~PTHREAD_MUTEXATTR_FLAG_PSHARED)))
+       mutex->__data.__kind &= ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
 
   /* Default values: mutex not used yet.  */
   // mutex->__count = 0;	already done by memset
