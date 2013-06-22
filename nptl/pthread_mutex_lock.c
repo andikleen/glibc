@@ -122,10 +122,9 @@ __pthread_mutex_lock (mutex)
 	  mutex->__data.__kind &= ~PTHREAD_MUTEX_ELISION_NP;
           goto simple;
 	}
-      /* Don't record owner or users for elision case. */
-      int ret = LLL_MUTEX_LOCK_ELISION (mutex);
-      assert (mutex->__data.__owner == 0);
-      return ret;
+      /* Don't record owner or users for elision case. This is a
+         tail call.  */
+      return LLL_MUTEX_LOCK_ELISION (mutex);
     }
   else if (__builtin_expect (type == PTHREAD_MUTEX_RECURSIVE_NP, 1))
     {
