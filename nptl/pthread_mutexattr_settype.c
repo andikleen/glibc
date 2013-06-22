@@ -20,6 +20,10 @@
 #include <pthreadP.h>
 #include <shlib-compat.h>
 
+#ifndef ENABLE_ELISION
+#define ENABLE_ELISION 0
+#endif
+
 static int
 pthread_mutexattr_settype_worker (pthread_mutexattr_t *attr, int kind)
 {
@@ -42,6 +46,11 @@ pthread_mutexattr_settype_worker (pthread_mutexattr_t *attr, int kind)
       if ((kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0)
         kind |= PTHREAD_MUTEX_NO_ELISION_NP;
     }
+
+  /* When the CPU does not support elision never allow to set the elision
+     flags.  */
+  if ((kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) && !ENABLE_ELISION)
+    kind &= ~PTHREAD_MUTEX_ELISION_FLAGS_NP;
 
   iattr = (struct pthread_mutexattr *) attr;
 
