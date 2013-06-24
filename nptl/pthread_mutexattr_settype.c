@@ -36,17 +36,6 @@ pthread_mutexattr_settype_worker (pthread_mutexattr_t *attr, int kind)
   if ((kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) == PTHREAD_MUTEX_ELISION_FLAGS_NP)
     return EINVAL;
 
-  /* When a NORMAL mutex is explicitly specified, default to no elision
-     to satisfy POSIX's deadlock requirement. Also convert the NORMAL
-     type to DEFAULT, as the rest of the lock library doesn't have
-     the code paths for them.  */
-  if (mkind == PTHREAD_MUTEX_NORMAL)
-    {
-      kind = PTHREAD_MUTEX_DEFAULT | (kind & PTHREAD_MUTEX_ELISION_FLAGS_NP);
-      if ((kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) == 0)
-        kind |= PTHREAD_MUTEX_NO_ELISION_NP;
-    }
-
   /* When the CPU does not support elision never allow to set the elision
      flags.  */
   if ((kind & PTHREAD_MUTEX_ELISION_FLAGS_NP) && !ENABLE_ELISION)
@@ -82,10 +71,10 @@ int
 attribute_compat_text_section
 __pthread_mutexattr_settype_old (pthread_mutexattr_t *attr, int kind)
 {
-  /* Force no elision for the old ambigious DEFAULT/NORMAL
-     kind.  */
+  /* Force NORMAL (= no elision) for the old ambigious
+     DEFAULT/NORMAL kind.  */
   if (kind == PTHREAD_MUTEX_DEFAULT)
-    kind |= PTHREAD_MUTEX_NO_ELISION_NP;
+    kind |= PTHREAD_MUTEX_NORMAL;
   return pthread_mutexattr_settype_worker (attr, kind);
 }
 
