@@ -23,6 +23,9 @@
 #include <elision-conf.h>
 #include <glibc-var.h>
 
+/* Reasonable initial tuning values, may be revised in the future.
+   This is a conservative initial value.  */
+
 struct elision_config __elision_aconf =
   {
     .skip_lock_busy = 3,
@@ -110,19 +113,23 @@ elision_aconf_setup (const char *s)
     }
 }
 
-/* Elided rwlock toggle.  */
+/* Elided rwlock toggle, set when elision is available and is 
+   enabled for rwlocks.  */
 
 int __rwlock_rtm_enabled attribute_hidden;
 
-/* Retries for elided rwlocks.  */
+/* Retries for elided rwlocks on read. Conservative initial value.  */
 
 int __rwlock_rtm_read_retries attribute_hidden = 3;
 
-/* Global elision check switch.  */
+/* Set when the CPU supports elision. When false elision is never attempted.  */
 
 int __elision_available attribute_hidden;
 
-/* Force elision for all new locks.  */
+/* Force elision for all new locks. This is used to decide whether existing
+   DEFAULT locks should be automatically upgraded to elision in
+   pthread_mutex_lock(). Disabled for suid programs. Only used when elision
+   is available.  */
 
 int __pthread_force_elision attribute_hidden;
 
