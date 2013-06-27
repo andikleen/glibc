@@ -66,6 +66,7 @@ libpthread-routines = nptl-init vars events version \
 		      pthread_rwlockattr_setpshared \
 		      pthread_rwlockattr_getkind_np \
 		      pthread_rwlockattr_setkind_np \
+		      pthread_rwlockattr_setelision_np \
 		      pthread_cond_init pthread_cond_destroy \
 		      pthread_cond_wait pthread_cond_timedwait \
 		      pthread_cond_signal pthread_cond_broadcast \

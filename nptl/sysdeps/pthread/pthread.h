@@ -995,6 +995,16 @@ extern int pthread_rwlockattr_setkind_np (pthread_rwlockattr_t *__attr,
 					  int __pref) __THROW __nonnull ((1));
 #endif
 
+#if defined __USE_GNU
+
+/* Set elision tuning hints for *ATTR.  When FLAG is PTHREAD_MUTEX_ELISION_ENABLE_NP
+   enable elision for the rwlock. When FLAG is PTHREAD_MUTEX_ELISION_DISABLE_NP,
+   disable elision for the rwlock. This is purely a tuning hint.  */
+
+extern int pthread_rwlockattr_setelision_np (pthread_rwlockattr_t *__attr,
+		                             int __flag);
+#endif
+
 
 /* Functions for handling conditional variables.  */
 

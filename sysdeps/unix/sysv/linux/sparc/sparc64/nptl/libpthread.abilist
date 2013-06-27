@@ -15,6 +15,7 @@ GLIBC_2.18
  __pthread_mutexattr_settype F
  pthread_mutexattr_setelision_np F
  pthread_mutexattr_setkind_np F
+ pthread_rwlockattr_setelision_np F
  pthread_mutexattr_settype F
 GLIBC_2.2
  GLIBC_2.2 A

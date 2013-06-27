@@ -260,6 +260,7 @@ libpthread {
     pthread_mutexattr_setkind_np;
     __pthread_mutexattr_settype;
     pthread_mutexattr_setelision_np;
+    pthread_rwlockattr_setelision_np;
   };
 
   GLIBC_PRIVATE {
