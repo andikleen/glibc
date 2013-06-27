@@ -178,6 +178,7 @@ GLIBC_2.18
  GLIBC_2.18 A
  __pthread_mutexattr_settype F
  pthread_getattr_default_np F
+ pthread_mutexattr_setelision_np F
  pthread_mutexattr_setkind_np F
  pthread_mutexattr_settype F
  pthread_setattr_default_np F

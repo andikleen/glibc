@@ -853,6 +853,22 @@ extern int pthread_mutexattr_settype (pthread_mutexattr_t *__attr, int __kind)
      __THROW __nonnull ((1));
 #endif
 
+#if defined __USE_GNU
+
+/* Elision tuning hints. */
+enum
+{
+  PTHREAD_MUTEX_ELISION_DISABLE_NP,
+  PTHREAD_MUTEX_ELISION_ENABLE_NP
+};
+
+/* Set elision tuning hints for *ATTR.  When FLAG is PTHREAD_MUTEX_ELISION_ENABLE_NP
+   enable elision for the mutex. When FLAG is PTHREAD_MUTEX_ELISION_DISABLE_NP,
+   disable elision for the mutex. This is purely a tuning hint.  */
+extern int pthread_mutexattr_setelision_np (pthread_mutexattr_t *__attr,
+		                            int __flag);
+#endif
+
 /* Return in *PROTOCOL the mutex protocol attribute in *ATTR.  */
 extern int pthread_mutexattr_getprotocol (const pthread_mutexattr_t *
 					  __restrict __attr,
