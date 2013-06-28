@@ -272,7 +272,8 @@ tests = tst-typesizes \
 	tst-getpid1 tst-getpid2 tst-getpid3 \
 	tst-setuid3 \
 	tst-initializers1 $(addprefix tst-initializers1-,c89 gnu89 c99 gnu99) \
-	tst-bad-schedattr
+	tst-bad-schedattr \
+	tst-elision1 tst-elision2 tst-elision1b tst-elision2b tst-elision1c tst-elision2c
 xtests = tst-setuid1 tst-setuid1-static tst-setuid2 \
 	tst-mutexpp1 tst-mutexpp6 tst-mutexpp10
 test-srcs = tst-oddstacklimit
@@ -468,6 +469,14 @@ tst-umask1-ARGS = $(objpfx)tst-umask1.temp
 # with the original thread. Both threads then race in ld.so with lazy PLT
 # resolution. Avoid this race by disabling lazy binding. BZ #11214.
 tst-getpid2-ENV = LD_BIND_NOW=1
+
+# test if disabling elision works through environment arguments
+tst-elision1b-ENV = GLIBC_PTHREAD_MUTEX=none GLIBC_PTHREAD_RWLOCK=none
+tst-elision2b-ENV = GLIBC_PTHREAD_MUTEX=none GLIBC_PTHREAD_RWLOCK=none
+# test if enabling elision works
+# XXX requires env file
+tst-elision1c-ENV = GLIBC_PTHREAD_MUTEX=elision GLIBC_PTHREAD_RWLOCK=elision
+tst-elision2c-ENV = GLIBC_PTHREAD_MUTEX=elision GLIBC_PTHREAD_RWLOCK=elision
 
 $(objpfx)tst-atfork2: $(libdl) $(shared-thread-library)
 LDFLAGS-tst-atfork2 = -rdynamic
