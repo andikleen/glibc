@@ -91,10 +91,10 @@ complain (const char *msg, int len)
   INTERNAL_SYSCALL (write, err, 3, 2, (char *)msg, len);
 }
 
-/* Parse configuration information.  */
+/* Parse configuration information for string S into CONFIG.  */
 
 static void
-elision_aconf_setup (const char *s)
+elision_conf_setup (const char *s, struct elision_config *config)
 {
   int i;
 
@@ -111,23 +111,23 @@ elision_aconf_setup (const char *s)
 
 	      if (s[nlen] != '=')
 		{
-		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: missing =\n"));
+		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_* syntax: missing =\n"));
 		  return;
 		}
 	      s += nlen + 1;
 	      val = strtoul (s, &end, 0);
 	      if (end == s)
 		{
-		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: missing number\n"));
+		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_* syntax: missing number\n"));
 		  return;
 		}
-	      *(int *)(((char *)&__elision_aconf) + tunings[i].offset) = val;
+	      *(int *)(((char *)config) + tunings[i].offset) = val;
 	      s = end;
 	      if (*s == ',' || *s == ':')
 		s++;
 	      else if (*s)
 		{
-		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: garbage after number\n"));
+		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_* syntax: garbage after number\n"));
 		  return;
 		}
 	      break;
@@ -135,7 +135,7 @@ elision_aconf_setup (const char *s)
 	}
       if (tunings[i].name == NULL)
 	{
-	  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: unknown tunable\n"));
+	  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_* syntax: unknown tunable\n"));
 	  return;
 	}
     }
@@ -165,12 +165,31 @@ elision_mutex_init (const char *s)
     {
       __pthread_force_elision = __elision_available;
       if (s[7] == ':')
-	elision_aconf_setup (s + 8);
+	elision_conf_setup (s + 8, &__elision_aconf);
     }
   else if (strcmp (s, "none") == 0 || strcmp (s, "no_elision") == 0)
     __pthread_force_elision = 0;
   else
     complain (PAIR ("pthreads: Unknown setting for GLIBC_PTHREAD_MUTEX\n"));
+}
+
+/* Initialize elision for rwlocks.  */
+
+static void
+elision_rwlock_init (const char *s)
+{
+  if (s == NULL)
+    return;
+  if (strncmp (s, "elision", 7) == 0)
+    {
+      __elision_rwconf.retry_try_xbegin = __elision_available;
+      if (s[7] == ':')
+	elision_conf_setup (s + 8, &__elision_rwconf);
+    }
+  else if (strcmp (s, "none") == 0 || strcmp (s, "no_elision") == 0)
+    __elision_rwconf.retry_try_xbegin = 0; /* Disable elision on rwlocks */
+  else
+    complain (PAIR ("pthreads: Unknown setting for GLIBC_PTHREAD_RWLOCK\n"));
 }
 
 /* Initialize elison.  */
@@ -192,6 +211,7 @@ elision_init (int argc __attribute__ ((unused)),
   __glibc_var_init (argc, argv, environ);
 
   elision_mutex_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_MUTEX].val);
+  elision_rwlock_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_RWLOCK].val);
 }
 
 #ifdef SHARED
