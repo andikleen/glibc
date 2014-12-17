@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "config.h"
 
 #define CPUID_FEATURE_RTM (1U << 11)
@@ -110,6 +111,21 @@ static int
 elision_override (const char *var, int iter)
 {
   char *s = getenv(var);
+
+#ifdef ENABLE_ELISION_TUNE_WHITELIST
+  if (access ("/etc/glibc-env.cfg", R_OK))
+    {
+      if (system("grep 2>/dev/null disallow_elision_tuning /etc/glibc-env.cfg"))
+	{
+	  printf ("elision env var override disabled\n");
+	  return iter;
+	}
+      if (system("grep 2>/dev/null allow_elision_tuning /etc/glibc-env.cfg"))
+	printf("elision env var override enabled\n");
+    }
+  else
+    return iter;
+#endif
 
   s = getenv(var);
   if (s && strstr (s, "none"))

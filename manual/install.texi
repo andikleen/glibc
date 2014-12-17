@@ -160,6 +160,10 @@ so that they can be invoked directly.
 @item --enable-lock-elision=yes
 Enable lock elision for pthread mutexes by default.
 
+@item --enable-elision-tune-whitelist=yes
+Enable white listing for elision environment variable tuning through
+/etc/glibc-env.cfg.
+
 @pindex pt_chown
 @findex grantpt
 @item --enable-pt_chown

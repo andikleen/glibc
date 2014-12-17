@@ -177,6 +177,16 @@ if test "$enable_lock_elision" = yes ; then
   AC_DEFINE(ENABLE_LOCK_ELISION)
 fi
 
+AC_ARG_ENABLE([elision-tune-whitelist],
+	      AC_HELP_STRING([--enable-elision-tune-whitelist[=yes/no]],
+			     [Enable white list for elision environment variable tuning through /etc/glibc-env.cfg]),
+	      [enable_elision_tune_whitelist=$enableval],
+	      [enable_elision_tune_whitelist=no])
+AC_SUBST(enable_elision_tune_whitelist)
+if test "$enable_elision_tune_whitelist" = yes ; then
+  AC_DEFINE(ENABLE_ELISION_TUNE_WHITELIST)
+fi
+
 dnl Generic infrastructure for drop-in additions to libc.
 AC_ARG_ENABLE([add-ons],
 	      AC_HELP_STRING([--enable-add-ons@<:@=DIRS...@:>@],

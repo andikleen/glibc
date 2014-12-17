@@ -166,6 +166,10 @@
 /* Define if lock elision should be enabled by default.  */
 #undef ENABLE_LOCK_ELISION
 
+/* Define if environment variable for lock elision tuning should be white listed
+   through /etc/glibc-env.cfg.  */
+#undef ENABLE_ELISION_TUNE_WHITELIST
+
 /* Package description.  */
 #undef PKGVERSION
 

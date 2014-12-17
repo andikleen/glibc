@@ -22,6 +22,10 @@
 #include <elision-conf.h>
 #include <unistd.h>
 #include <glibc-var.h>
+#include <sys/mman.h>
+#include <sys/fcntl.h>
+
+#define PAIR(x) x, sizeof (x)-1
 
 /* Reasonable initial tuning values, may be revised in the future.
    This is a conservative initial value.  */
@@ -79,8 +83,6 @@ static const struct tune tunings[] =
     FIELD(skip_trylock_internal_abort),
     {}
   };
-
-#define PAIR(x) x, sizeof (x)-1
 
 /* Complain.  */
 
@@ -192,6 +194,125 @@ elision_rwlock_init (const char *s)
     complain (PAIR ("pthreads: Unknown setting for GLIBC_PTHREAD_RWLOCK\n"));
 }
 
+#define X86_PAGE_SIZE 4096
+#define ENV_VAR_WHITELIST "/etc/glibc-env.cfg"
+
+/* Does specific M match LINE before END? Write length back to LENP.  */
+
+static bool
+match (char *line, char *end, const char *m, int *lenp)
+{
+  int len = strlen (m);
+
+  *lenp = 0;
+  if (len > end - line)
+    return false;
+  if (!strncmp (line, m, len))
+    {
+      *lenp = len;
+      return true;
+    }
+  return false;
+}
+
+/* INTERNAL_SYSCALL does not support 6 argument calls on i386, so do our own
+   mmap stub here. addr and offset are hardcoded to 0 to simplify the
+   assembler.  */
+
+static inline void *
+mmap_00(size_t length, int prot, int flags, int fd)
+{
+  void *ret;
+
+#ifdef __i386__
+  asm(
+     "push %%ebx\n\t"
+     "push %%ebp\n\t"
+     "mov %1,%%eax\n\t" /* syscall number */
+     "xor %%ebx,%%ebx\n\t" /* addr */
+     "xor %%ebp,%%ebp\n\t" /* offset */
+     "int $0x80\n\t"
+     "pop %%ebp\n\t"
+     "pop %%ebx\n\t"
+     : "=a" (ret)
+     : "i" (__NR_mmap2), "c" (length), "d" (prot), "S" (flags), "D" (fd));
+#else
+  INTERNAL_SYSCALL_DECL (err);
+  ret = (void *)INTERNAL_SYSCALL (mmap, err, 6, NULL, length,
+				  prot, flags, fd, 0);
+#endif
+  return ret;
+}
+
+/* Check extra file to see if we're allowed to use environment variables.
+   Should be moved elsewhere if extended for other purposes.  */
+
+static bool
+whitelist_env_var (void)
+{
+  int fd;
+  struct stat st;
+  INTERNAL_SYSCALL_DECL (err);
+  bool ok = false;
+
+#ifndef ENABLE_ELISION_TUNE_WHITELIST
+  return true;
+#endif
+
+  fd = INTERNAL_SYSCALL (open, err, 2, ENV_VAR_WHITELIST, O_RDONLY);
+  if (fd < 0)
+    return false;
+  if (INTERNAL_SYSCALL (fstat, err, 2, fd, &st) >= 0)
+    {
+      size_t size = (st.st_size + X86_PAGE_SIZE - 1) & ~(X86_PAGE_SIZE - 1);
+      char *map = mmap_00 (size, PROT_READ, MAP_SHARED, fd);
+      if (map != (char *)-1L)
+	{
+	  char *line;
+	  char *end = map + st.st_size;
+
+	  for (line = map; line < end; )
+	    {
+	      while (line < end && (*line == ' ' || *line == '\t' || *line == '\n'))
+		line++;
+	      if (line >= end)
+		break;
+	      if (*line == '#')
+		{
+		  while (line < end && *line != '\n')
+		    line++;
+		}
+	      else if (*line != '\n')
+		{
+		  int len = 0;
+
+		  if (match (line, end, "allow_elision_tuning", &len))
+		    ok = true;
+		  else if (match (line, end, "disallow_elision_tuning", &len))
+		    ok = false;
+		  else
+		    {
+		      complain (PAIR ("Unknown configuration specifier in " ENV_VAR_WHITELIST "\n"));
+		      len = end - line;
+		      if (len > 20)
+			len = 20;
+		      complain (line, len);
+		      complain (PAIR ("\n"));
+		      ok = false;
+		      break;
+		    }
+		  line += len;
+		  while (line < end && (*line == ' ' || *line == '\t' || *line == '\n'))
+		    line++;
+		}
+	    }
+	  INTERNAL_SYSCALL (munmap, err, 2, map, size);
+	}
+    }
+  INTERNAL_SYSCALL (close, err, 1, fd);
+  return ok;
+}
+
 /* Initialize elison.  */
 
 static void
@@ -210,8 +331,11 @@ elision_init (int argc __attribute__ ((unused)),
   /* For static builds need to call this explicitely. Noop for dynamic.  */
   __glibc_var_init (argc, argv, environ);
 
-  elision_mutex_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_MUTEX].val);
-  elision_rwlock_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_RWLOCK].val);
+  if (whitelist_env_var ())
+    {
+      elision_mutex_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_MUTEX].val);
+      elision_rwlock_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_RWLOCK].val);
+    }
 }
 
 #ifdef SHARED

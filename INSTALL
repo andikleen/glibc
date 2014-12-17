@@ -131,6 +131,10 @@ will be used, and CFLAGS sets optimization options for the compiler.
 `--enable-lock-elision=yes'
      Enable lock elision for pthread mutexes by default.
 
+`--enable-elision-tune-whitelist=yes'
+     Enable white list for elision environment variable tuning through
+     /etc/glibc-env.cfg.
+
 `--enable-pt_chown'
      The file `pt_chown' is a helper binary for `grantpt' (*note
      Pseudo-Terminals: Allocation.) that is installed setuid root to
