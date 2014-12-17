@@ -21,6 +21,7 @@
 #include <init-arch.h>
 #include <elision-conf.h>
 #include <unistd.h>
+#include <glibc-var.h>
 
 /* Reasonable initial tuning values, may be revised in the future.
    This is a conservative initial value.  */
@@ -43,6 +44,85 @@ struct elision_config __elision_aconf =
     .skip_trylock_internal_abort = 3,
   };
 
+struct tune
+{
+  const char *name;
+  unsigned offset;
+  int len;
+};
+
+#define FIELD(x) { #x, offsetof(struct elision_config, x), sizeof(#x)-1 }
+
+static const struct tune tunings[] =
+  {
+    FIELD(skip_lock_busy),
+    FIELD(skip_lock_internal_abort),
+    FIELD(retry_try_xbegin),
+    FIELD(skip_trylock_internal_abort),
+    {}
+  };
+
+#define PAIR(x) x, sizeof (x)-1
+
+/* Complain.  */
+
+static void
+complain (const char *msg, int len)
+{
+  INTERNAL_SYSCALL_DECL (err);
+  INTERNAL_SYSCALL (write, err, 3, 2, (char *)msg, len);
+}
+
+/* Parse configuration information.  */
+
+static void
+elision_aconf_setup (const char *s)
+{
+  int i;
+
+  while (*s)
+    {
+      for (i = 0; tunings[i].name != NULL; i++)
+	{
+	  int nlen = tunings[i].len;
+
+	  if (strncmp (tunings[i].name, s, nlen) == 0)
+	    {
+	      char *end;
+	      int val;
+
+	      if (s[nlen] != '=')
+		{
+		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: missing =\n"));
+		  return;
+		}
+	      s += nlen + 1;
+	      val = strtoul (s, &end, 0);
+	      if (end == s)
+		{
+		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: missing number\n"));
+		  return;
+		}
+	      *(int *)(((char *)&__elision_aconf) + tunings[i].offset) = val;
+	      s = end;
+	      if (*s == ',' || *s == ':')
+		s++;
+	      else if (*s)
+		{
+		  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: garbage after number\n"));
+		  return;
+		}
+	      break;
+	    }
+	}
+      if (tunings[i].name == NULL)
+	{
+	  complain (PAIR ("pthreads: invalid GLIBC_PTHREAD_MUTEX syntax: unknown tunable\n"));
+	  return;
+	}
+    }
+}
+
 /* Set when the CPU supports elision.  When false elision is never attempted.
  */
 
@@ -54,6 +134,26 @@ int __elision_available attribute_hidden;
    is available.  */
 
 int __pthread_force_elision attribute_hidden;
+
+/* Initialize mutex elision.  */
+
+static void
+elision_mutex_init (const char *s)
+{
+  if (s == NULL)
+    return;
+
+  if (strncmp (s, "elision", 7) == 0 && (s[7] == 0 || s[7] == ':'))
+    {
+      __pthread_force_elision = __elision_available;
+      if (s[7] == ':')
+	elision_aconf_setup (s + 8);
+    }
+  else if (strcmp (s, "none") == 0 || strcmp (s, "no_elision") == 0)
+    __pthread_force_elision = 0;
+  else
+    complain (PAIR ("pthreads: Unknown setting for GLIBC_PTHREAD_MUTEX\n"));
+}
 
 /* Initialize elison.  */
 
@@ -68,6 +168,12 @@ elision_init (int argc __attribute__ ((unused)),
 #endif
   if (!HAS_RTM)
     __elision_aconf.retry_try_xbegin = 0; /* Disable elision on rwlocks */
+
+
+  /* For static builds need to call this explicitely. Noop for dynamic.  */
+  __glibc_var_init (argc, argv, environ);
+
+  elision_mutex_init (_dl_glibc_var[GLIBC_VAR_PTHREAD_MUTEX].val);
 }
 
 #ifdef SHARED
