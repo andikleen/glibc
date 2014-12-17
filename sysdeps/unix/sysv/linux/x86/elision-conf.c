@@ -44,6 +44,24 @@ struct elision_config __elision_aconf =
     .skip_trylock_internal_abort = 3,
   };
 
+struct elision_config __elision_rwconf =
+  {
+    /* How often to not attempt to use elision if a transaction aborted
+       because the lock is already acquired.  Expressed in number of lock
+       acquisition attempts.  */
+    .skip_lock_busy = 3,
+    /* How often to not attempt to use elision if a transaction aborted due
+       to reasons other than other threads' memory accesses.  Expressed in
+       number of lock acquisition attempts.  */
+    .skip_lock_internal_abort = 3,
+    /* How often we retry using elision if there is chance for the transaction
+       to finish execution (e.g., it wasn't aborted due to the lock being
+       already acquired.  */
+    .retry_try_xbegin = 3,
+    /* Same as SKIP_LOCK_INTERNAL_ABORT but for trylock.  */
+    .skip_trylock_internal_abort = 3,
+  };
+
 struct tune
 {
   const char *name;
@@ -167,7 +185,7 @@ elision_init (int argc __attribute__ ((unused)),
   __pthread_force_elision = __libc_enable_secure ? 0 : __elision_available;
 #endif
   if (!HAS_RTM)
-    __elision_aconf.retry_try_xbegin = 0; /* Disable elision on rwlocks */
+    __elision_rwconf.retry_try_xbegin = 0; /* Disable elision on rwlocks */
 
 
   /* For static builds need to call this explicitely. Noop for dynamic.  */

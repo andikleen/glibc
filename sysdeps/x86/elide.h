@@ -36,14 +36,14 @@ elision_adapt(signed char *adapt_count, unsigned int status)
       /* Right now we skip here.  Better would be to wait a bit
 	 and retry.  This likely needs some spinning. Be careful
 	 to avoid writing the lock.  */
-      if (*adapt_count != __elision_aconf.skip_lock_busy)
-	ACCESS_ONCE (*adapt_count) = __elision_aconf.skip_lock_busy;
+      if (*adapt_count != __elision_rwconf.skip_lock_busy)
+	ACCESS_ONCE (*adapt_count) = __elision_rwconf.skip_lock_busy;
     }
   /* Internal abort.  There is no chance for retry.
      Use the normal locking and next time use lock.
      Be careful to avoid writing to the lock.  */
-  else if (*adapt_count != __elision_aconf.skip_lock_internal_abort)
-    ACCESS_ONCE (*adapt_count) = __elision_aconf.skip_lock_internal_abort;
+  else if (*adapt_count != __elision_rwconf.skip_lock_internal_abort)
+    ACCESS_ONCE (*adapt_count) = __elision_rwconf.skip_lock_internal_abort;
   return true;
 }
 
@@ -58,7 +58,7 @@ elision_adapt(signed char *adapt_count, unsigned int status)
 								\
     if ((adapt_count) <= 0) 					\
       {								\
-        for (int i = __elision_aconf.retry_try_xbegin; i > 0; i--) \
+        for (int i = __elision_rwconf.retry_try_xbegin; i > 0; i--) \
           {							\
             unsigned int status;				\
 	    if ((status = _xbegin ()) == _XBEGIN_STARTED)	\
@@ -84,7 +84,7 @@ elision_adapt(signed char *adapt_count, unsigned int status)
 
 #define ELIDE_TRYLOCK(adapt_count, is_lock_free, write) ({	\
   int ret = 0;						\
-  if (__elision_aconf.retry_try_xbegin > 0)		\
+  if (__elision_rwconf.retry_try_xbegin > 0)		\
     {  							\
       if (write)					\
         _xabort (_ABORT_NESTED_TRYLOCK);		\

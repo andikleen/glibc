@@ -33,6 +33,7 @@ struct elision_config
 };
 
 extern struct elision_config __elision_aconf attribute_hidden;
+extern struct elision_config __elision_rwconf attribute_hidden;
 
 extern int __elision_available attribute_hidden;
 extern int __pthread_force_elision attribute_hidden;
